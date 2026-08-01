@@ -129,7 +129,7 @@ export default function BKDisciplinePage() {
         }],
         incidentDate: polsisDate,
         location: polsisLocation || "Ruang Kelas / Lingkungan Sekolah",
-        description: polsisNotes ? `[Rekap POLSIS]: ${polsisNotes}` : "[Rekap POLSIS]: Pelanggaran terdata dari Buku Siswa",
+        description: polsisNotes || "Pelanggaran terdata dari Buku Siswa",
       });
 
       showAlert(
