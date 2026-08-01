@@ -85,14 +85,14 @@ export const disciplineRoutes = new Elysia({ prefix: "/discipline" })
   })
   .post("/thresholds", disciplineController.createThreshold, {
     body: CreateThresholdDto,
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor"])
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "BKTeacher", "Counselor"])
   })
   .put("/thresholds/:id", disciplineController.updateThreshold, {
     body: UpdateThresholdDto,
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor"])
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "BKTeacher", "Counselor"])
   })
   .delete("/thresholds/:id", disciplineController.deleteThreshold, {
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor"])
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "BKTeacher", "Counselor"])
   })
   .group("/sanctions", (app) => app
     .get("/", disciplineController.getSanctionLogs, {
