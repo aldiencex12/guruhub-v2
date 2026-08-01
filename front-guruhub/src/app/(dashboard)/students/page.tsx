@@ -59,9 +59,37 @@ export default function StudentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Student | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Student | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importErrors, setImportErrors] = useState<Array<{ row: number; column: string; reason: string }>>([]);
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      toast.error("Pilih file Excel terlebih dahulu");
+      return;
+    }
+    setIsImporting(true);
+    setImportErrors([]);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    try {
+      const res: any = await api.post("/import/students", formData);
+      toast.success("Data siswa berhasil diimpor!");
+      setImportDialogOpen(false);
+      setSelectedFile(null);
+      window.location.reload();
+    } catch (error: any) {
+      if (error.errors && Array.isArray(error.errors)) {
+        setImportErrors(error.errors);
+        toast.error(`Gagal mengimpor: Ditemukan ${error.errors.length} kesalahan pada file Excel`);
+      } else {
+        toast.error(error.message || "Gagal mengimpor siswa");
+      }
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const isMutating = createStudent.isPending || updateStudent.isPending || deleteStudent.isPending || deleteBulkStudent.isPending;
 
@@ -187,36 +215,11 @@ export default function StudentsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => api.download("/import/templates/students", "template-students.xlsx")}>
-            <Download className="h-4 w-4 mr-2" /> Template
+            <Download className="h-4 w-4 mr-2" /> Download Template
           </Button>
-          <div className="relative">
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={isImporting}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setIsImporting(true);
-                const formData = new FormData();
-                formData.append("file", file);
-                try {
-                  await api.post("/import/students", formData);
-                  toast.success("Siswa berhasil diimpor");
-                  window.location.reload();
-                } catch (error: any) {
-                  toast.error(error.message || "Gagal mengimpor siswa");
-                } finally {
-                  setIsImporting(false);
-                  e.target.value = "";
-                }
-              }}
-            />
-            <Button variant="outline" disabled={isImporting}>
-              <Upload className="h-4 w-4 mr-2" /> {isImporting ? "Mengimpor..." : "Import"}
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => { setImportDialogOpen(true); setImportErrors([]); setSelectedFile(null); }}>
+            <Upload className="h-4 w-4 mr-2" /> Import Excel
+          </Button>
           <Button onClick={openAdd} id="add-student-btn"><Plus className="h-4 w-4 mr-2" /> Tambah Siswa</Button>
         </div>
       </div>
@@ -319,6 +322,69 @@ export default function StudentsPage() {
         description={`Apakah Anda yakin ingin menghapus ${selectedIds.length} siswa yang terpilih?`}
         loading={isMutating}
       />
+
+      {/* Modal Dialog Import Excel */}
+      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} title="Import Data Siswa via Excel" size="md">
+        <form onSubmit={handleImportSubmit} className="space-y-4">
+          <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-100 dark:border-purple-900 text-sm text-purple-900 dark:text-purple-200 space-y-2">
+            <p className="font-semibold flex items-center gap-1.5"><Upload className="h-4 w-4 text-purple-600" /> Petunjuk Pengisian Berkas Excel:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs text-purple-800 dark:text-purple-300">
+              <li>Gunakan berkas template Excel resmi dari tombol <strong>Download Template</strong>.</li>
+              <li>Kolom <strong>nisn</strong>, <strong>name</strong>, <strong>gender</strong> (L/P), dan <strong>religion</strong> wajib diisi.</li>
+              <li>Sistem menerima huruf besar/kecil (contoh: <em>Islam, islam, ISLAM</em> / <em>L, P, Laki-laki, Perempuan</em>).</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Pilih Berkas Excel (.xlsx / .xls) *</Label>
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                id="excel-file-input"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedFile(file);
+                    setImportErrors([]);
+                  }
+                }}
+              />
+              <label htmlFor="excel-file-input" className="cursor-pointer flex flex-col items-center justify-center gap-2">
+                <Upload className="h-8 w-8 text-purple-600" />
+                {selectedFile ? (
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500 font-normal">{(selectedFile.size / 1024).toFixed(1)} KB — Klik untuk mengganti berkas</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Klik di sini untuk memilih file Excel</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Format .xlsx atau .xls</p>
+                  </div>
+                )}
+              </label>
+            </div>
+          </div>
+
+          {importErrors.length > 0 && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-xs text-red-700 dark:text-red-300 max-h-40 overflow-y-auto space-y-1">
+              <p className="font-semibold text-red-800 dark:text-red-200">⚠️ Ditemukan {importErrors.length} Kesalahan Baris Data:</p>
+              {importErrors.map((err, idx) => (
+                <p key={idx}>• Baris {err.row} ({err.column}): {err.reason}</p>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <Button type="button" variant="outline" onClick={() => setImportDialogOpen(false)}>Batal</Button>
+            <Button type="submit" loading={isImporting} disabled={!selectedFile || isImporting}>
+              <Upload className="h-4 w-4 mr-2" /> Submit & Impor Data
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }
