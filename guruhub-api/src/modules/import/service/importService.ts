@@ -621,9 +621,6 @@ export class ImportService {
         } else {
           sheetNisn.add(r.nisn);
         }
-        if (dbNisn.has(r.nisn)) {
-          errors.push({ row: rowNum, column: "nisn", reason: "NISN sudah digunakan" });
-        }
       }
 
       // religion check
