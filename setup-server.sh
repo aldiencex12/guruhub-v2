@@ -98,6 +98,14 @@ cd "$PROJECT_DIR/front-guruhub"
 npm install
 npm run build
 
+# Frontend Mobile App
+if [ -d "$PROJECT_DIR/front-guruhub-mobile" ]; then
+    echo -e "${BLUE}▶ Processing Mobile Frontend (front-guruhub-mobile)...${NC}"
+    cd "$PROJECT_DIR/front-guruhub-mobile"
+    npm install
+    npm run build
+fi
+
 cd "$PROJECT_DIR"
 
 # 7. Konfigurasi PM2 Process Manager
