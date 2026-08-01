@@ -28,10 +28,9 @@ import { cors } from "@elysiajs/cors";
 const app = new Elysia()
   .use(cors({
     origin: true,
-    methods: "*",
-    allowedHeaders: true,
-    exposeHeaders: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "x-school-id", "Accept", "Origin", "X-Requested-With", "User-Agent"],
   }))
   .use(swagger({
     path: "/swagger",
@@ -54,7 +53,7 @@ const app = new Elysia()
         error: error.message,
       };
     }
-    
+
     if (code === "VALIDATION") {
       set.status = 400;
       const detailMsg = (error as any)?.all ? JSON.stringify((error as any).all) : error.message;
@@ -102,8 +101,8 @@ const app = new Elysia()
   });
 
 console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
-app.onError(({ code, error, request, set }) => { 
-  console.error(`[Global Error] ${request.method} ${request.url}:`, error.message || error); 
+app.onError(({ code, error, request, set }) => {
+  console.error(`[Global Error] ${request.method} ${request.url}:`, error.message || error);
   if (!set.status || set.status === 200) {
     set.status = (error as any).statusCode || (error as any).status || (code === 'VALIDATION' ? 400 : 500);
   }

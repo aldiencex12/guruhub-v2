@@ -22,7 +22,7 @@ const getApiUrl = () => {
 
     // Local dev ports 3001/3002 or localhost/127.0.0.1
     if (host === "localhost" || host === "127.0.0.1" || window.location.port === "3001" || window.location.port === "3002") {
-      return `${window.location.protocol}//${host}:3000`;
+      return `${window.location.protocol}//${host}:8000`;
     }
 
     // Default reverse proxy (same origin /api)
