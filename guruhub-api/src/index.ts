@@ -67,9 +67,10 @@ const app = new Elysia()
 
     set.status = 500;
     const errMessage = (error && typeof error === "object" && "message" in error) ? (error as any).message : String(error);
+    console.error("[INTERNAL SERVER ERROR]:", error);
     return {
       success: false,
-      error: "Kesalahan internal server",
+      error: errMessage || "Kesalahan internal server",
       message: errMessage,
     };
   })
