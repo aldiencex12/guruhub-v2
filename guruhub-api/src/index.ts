@@ -94,7 +94,7 @@ const app = new Elysia()
   .use(disciplineRoutes)
   .use(schoolsRoutes)
   .listen({
-    port: process.env.PORT ? parseInt(process.env.PORT) : 8000,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
     hostname: "0.0.0.0"
   });
 

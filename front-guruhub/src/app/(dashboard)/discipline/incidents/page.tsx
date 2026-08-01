@@ -727,6 +727,23 @@ export default function DisciplineIncidentsPage() {
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
                 />
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {["Ruang Kelas", "Kantin", "Lapangan", "Koridor", "Toilet", "Gerbang"].map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setLocation(loc)}
+                      className={cn(
+                        "text-[11px] px-2.5 py-1 rounded-md font-semibold transition-all border cursor-pointer",
+                        location === loc
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                      )}
+                    >
+                      + {loc}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Description */}

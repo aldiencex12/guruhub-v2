@@ -402,15 +402,32 @@ export default function BKDisciplinePage() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-extrabold uppercase text-gray-400 mb-1">
-                        Lokasi
+                        Lokasi Kejadian
                       </label>
                       <input
                         type="text"
-                        placeholder="Ruang Kelas, Kantin..."
+                        placeholder="Ruang Kelas, Kantin, Lapangan..."
                         value={polsisLocation}
                         onChange={(e) => setPolsisLocation(e.target.value)}
-                        className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold"
+                        className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
                       />
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {["Ruang Kelas", "Kantin", "Lapangan", "Koridor", "Toilet", "Gerbang"].map((loc) => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => setPolsisLocation(loc)}
+                            className={cn(
+                              "text-[9px] px-2 py-0.5 rounded-lg font-bold transition-all border",
+                              polsisLocation === loc
+                                ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                                : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100"
+                            )}
+                          >
+                            + {loc}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 

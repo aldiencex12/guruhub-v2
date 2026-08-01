@@ -38,6 +38,30 @@ export function SearchableSelectModal({
     }
   }, [isOpen]);
 
+  // Handle mobile Back Gesture & Android Back Button so it only closes the modal instead of leaving the page
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const stateKey = `modal_open_${Date.now()}`;
+    window.history.pushState({ [stateKey]: true }, "");
+
+    let closedByPopState = false;
+
+    const handlePopState = () => {
+      closedByPopState = true;
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (!closedByPopState && window.history.state && window.history.state[stateKey]) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return options;
     const q = searchQuery.toLowerCase();
