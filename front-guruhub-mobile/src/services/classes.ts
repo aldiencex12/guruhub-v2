@@ -11,8 +11,11 @@ export const classesService = {
     if (params?.limit) query.append("limit", String(params.limit));
     const queryString = query.toString();
     if (queryString) path += `?${queryString}`;
-    const res: ApiResponse<Class[]> = await api.get(path);
-    return res.data;
+    const res: any = await api.get(path);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    return [];
   },
 
   getById: async (id: number): Promise<Class> => {

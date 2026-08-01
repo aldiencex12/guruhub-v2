@@ -336,39 +336,45 @@ export default function BKDisciplinePage() {
               <label className="block text-[10px] font-extrabold uppercase text-gray-400 mb-1">
                 1. Pilih Kelas
               </label>
-              <select
-                value={polsisClassId}
-                onChange={(e) => {
-                  setPolsisClassId(e.target.value);
-                  setPolsisStudentId("");
-                }}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500"
-                required
-              >
-                <option value="">-- Pilih Kelas Siswa --</option>
-                {safeClasses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={polsisClassId}
+                  onChange={(e) => {
+                    setPolsisClassId(e.target.value);
+                    setPolsisStudentId("");
+                  }}
+                  className="w-full px-3 py-2.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500 appearance-none pr-8 cursor-pointer"
+                  required
+                >
+                  <option value="">-- Pilih Kelas Siswa --</option>
+                  {safeClasses.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="h-4 w-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             {/* Step 2: Pilih Siswa */}
             {polsisClassId && (
               <div>
                 <label className="block text-[10px] font-extrabold uppercase text-gray-400 mb-1">
-                  2. Pilih Nama Siswa
+                  2. Pilih Nama Siswa ({safePolsisStudents.length} Siswa)
                 </label>
-                <select
-                  value={polsisStudentId}
-                  onChange={(e) => setPolsisStudentId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500"
-                  required
-                >
-                  <option value="">-- Pilih Siswa --</option>
-                  {safePolsisStudents.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.nisn || "No NISN"})</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={polsisStudentId}
+                    onChange={(e) => setPolsisStudentId(e.target.value)}
+                    className="w-full px-3 py-2.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500 appearance-none pr-8 cursor-pointer"
+                    required
+                  >
+                    <option value="">-- Pilih Siswa --</option>
+                    {safePolsisStudents.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.nisn || "No NISN"})</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="h-4 w-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             )}
 
@@ -377,19 +383,22 @@ export default function BKDisciplinePage() {
               <label className="block text-[10px] font-extrabold uppercase text-gray-400 mb-1">
                 3. Jenis Pelanggaran
               </label>
-              <select
-                value={polsisTypeId}
-                onChange={(e) => setPolsisTypeId(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500"
-                required
-              >
-                <option value="">-- Pilih Aturan / Pelanggaran --</option>
-                {safeDisciplineTypes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} (+{t.defaultPoints || t.points || 5} Poin)
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={polsisTypeId}
+                  onChange={(e) => setPolsisTypeId(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-rose-500 appearance-none pr-8 cursor-pointer"
+                  required
+                >
+                  <option value="">-- Pilih Aturan / Pelanggaran --</option>
+                  {safeDisciplineTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} (+{t.defaultPoints || t.points || 5} Poin)
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="h-4 w-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             {/* Step 4: Tanggal & Lokasi */}
