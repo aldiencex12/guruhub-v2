@@ -28,7 +28,9 @@ import { cors } from "@elysiajs/cors";
 const app = new Elysia()
   .use(cors({
     origin: true,
-    allowedHeaders: ["Content-Type", "Authorization", "x-school-id"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "x-school-id", "Accept", "Origin", "X-Requested-With", "User-Agent"],
   }))
   .use(swagger({
     path: "/swagger",
