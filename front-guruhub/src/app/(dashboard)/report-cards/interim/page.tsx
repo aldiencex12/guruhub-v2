@@ -13,6 +13,7 @@ import { useAcademicYears } from "@/queries/dashboard.query";
 import { useSubjects } from "@/queries/subjects.query";
 import { interimReportCardsService } from "@/services/report-cards";
 import { api } from "@/services/api";
+import { useAuthStore } from "@/store/auth.store";
 import type { AcademicYear } from "@/types";
 
 /* ─── 3-Way Religion Filter Helpers ─── */
@@ -37,10 +38,21 @@ function studentMatchesSubject(studentReligion: string, subject: any): boolean {
 }
 
 export default function InterimReportCardsPage() {
+  const { currentUser } = useAuthStore();
   const { data: classes = [] } = useClasses();
   const { data: academicYears = [] } = useAcademicYears();
   const { data: subjectsRaw = [] } = useSubjects();
   const subjects: any[] = subjectsRaw as any[];
+
+  if (currentUser?.role === "Teacher") {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mb-3" />
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Akses Ditolak</h2>
+        <p className="text-sm text-gray-500 mt-1">Guru Mapel tidak memiliki akses untuk melihat Raport Sisipan.</p>
+      </div>
+    );
+  }
 
   const activeAcademicYear = academicYears.find((y: AcademicYear) => y.isActive);
 

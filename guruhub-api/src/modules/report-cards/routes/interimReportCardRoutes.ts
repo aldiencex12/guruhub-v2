@@ -9,7 +9,7 @@ export const interimReportCardRoutes = new Elysia({ prefix: "/interim-report-car
   .use(tenantMiddleware)
   .use(authMiddleware)
   .post("/generate", interimController.generateOrGet, {
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher", "Teacher"]),
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"]),
   })
   .post("/batch-grades", interimController.batchSaveGrades, {
     beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher", "Teacher"]),
@@ -18,8 +18,8 @@ export const interimReportCardRoutes = new Elysia({ prefix: "/interim-report-car
     beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"]),
   })
   .get("/:id", interimController.getDetails, {
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher", "Teacher"]),
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"]),
   })
   .get("/class/:classId", interimController.getClassReports, {
-    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher", "Teacher"]),
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"]),
   });

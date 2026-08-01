@@ -77,7 +77,7 @@ const menuItems: MenuItem[] = [
       { label: "Kategori Nilai", href: "/assessment-categories", icon: Award, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher"] },
       { label: "Kalkulasi Nilai", href: "/grade-engine", icon: BarChart3, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "Teacher"] },
       { label: "Rapor Siswa", href: "/report-cards", icon: FileText, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"] },
-      { label: "Raport Sisipan", href: "/report-cards/interim", icon: FileText, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher"] },
+      { label: "Raport Sisipan", href: "/report-cards/interim", icon: FileText, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "HomeroomTeacher"] },
       { label: "Input Nilai Sisipan", href: "/assessments/interim", icon: BarChart3, roles: ["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher"] },
     ],
   },
