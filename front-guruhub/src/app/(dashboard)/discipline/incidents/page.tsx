@@ -533,6 +533,9 @@ export default function DisciplineIncidentsPage() {
                         <span className="text-xs text-muted-foreground block">
                           {incident.className ? `Kelas: ${incident.className}` : ""}
                         </span>
+                        <span className="inline-flex items-center gap-1 text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 px-1.5 py-0.5 rounded font-bold mt-1">
+                          👤 Pelapor: {incident.reporterName || incident.reporterEmail || "Sistem"} {incident.reporterRole ? `(${incident.reporterRole})` : ""}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-xs">
                         <span className="font-semibold text-foreground block">

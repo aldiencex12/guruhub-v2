@@ -565,14 +565,27 @@ export default function BKDisciplinePage() {
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                        {inc.studentName || inc.student?.name || "Siswa"}
+                        {inc.studentName || inc.student?.name || "Siswa"} {inc.className ? `(${inc.className})` : ""}
                       </h4>
                       <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                        {inc.disciplineTypeName || inc.disciplineType?.name || "Pelanggaran"} • {inc.points || 0} poin
+                        {inc.disciplineTypeName || inc.disciplineType?.name || "Pelanggaran"} • <span className="font-extrabold text-rose-600 dark:text-rose-400">+{inc.points || inc.demeritPoints || 5} Poin</span>
                       </p>
-                      <p className="text-[9px] text-gray-400 mt-0.5">
-                        {inc.incidentDate ? new Date(inc.incidentDate).toLocaleDateString("id-ID") : "—"}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-[9px] text-gray-400 font-medium">
+                          📅 {inc.incidentDate ? new Date(inc.incidentDate).toLocaleDateString("id-ID") : "—"}
+                        </span>
+                        {inc.location && (
+                          <span className="text-[9px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded font-semibold">
+                            📍 {inc.location}
+                          </span>
+                        )}
+                      </div>
+                      {/* Log akun pelapor */}
+                      <div className="text-[9px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded-md font-bold mt-1.5 inline-flex items-center gap-1">
+                        <span>👤 Pelapor:</span>
+                        <span className="underline">{inc.reporterName || inc.reporterEmail || "Sistem"}</span>
+                        {inc.reporterRole && <span className="opacity-75">({inc.reporterRole})</span>}
+                      </div>
                     </div>
                     <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full", INCIDENT_STATUS_COLORS[inc.status] ?? "bg-gray-100 text-gray-500")}>
                       {inc.status}

@@ -12,6 +12,7 @@ import {
   disciplinePlenoDecisions
 } from "../../../schema/discipline";
 import { users } from "../../../schema/users";
+import { teachers } from "../../../schema/teachers";
 import { students } from "../../../schema/students";
 import { classes } from "../../../schema/classes";
 import { and, eq, or, like, isNull, sql, gte, lte, desc } from "drizzle-orm";
@@ -274,7 +275,11 @@ export class DisciplineRepository {
       incidentDate: disciplineIncidents.incidentDate,
       location: disciplineIncidents.location,
       status: disciplineIncidents.status,
-      reporterName: users.email,
+      description: disciplineIncidents.description,
+      reporterUserId: disciplineIncidents.reporterUserId,
+      reporterName: sql<string>`COALESCE(MIN(${teachers.name}), MIN(${users.email}))`,
+      reporterEmail: users.email,
+      reporterRole: users.role,
       studentsCount: sql<number>`count(distinct ${disciplineIncidentStudents.studentId})`,
       demeritPoints: sql<number>`COALESCE(SUM(${disciplineIncidentStudents.pointSnapshot}), 0)`,
       // First student name and class for list display
@@ -285,13 +290,14 @@ export class DisciplineRepository {
     })
     .from(disciplineIncidents)
     .leftJoin(users, eq(disciplineIncidents.reporterUserId, users.id))
+    .leftJoin(teachers, eq(users.id, teachers.userId))
     .leftJoin(disciplineIncidentStudents, eq(disciplineIncidents.id, disciplineIncidentStudents.incidentId))
     .leftJoin(students, eq(disciplineIncidentStudents.studentId, students.id))
     .leftJoin(classes, eq(disciplineIncidentStudents.classId, classes.id))
     .leftJoin(disciplineTypes, eq(disciplineIncidentStudents.disciplineTypeId, disciplineTypes.id))
     .leftJoin(disciplineCategories, eq(disciplineTypes.categoryId, disciplineCategories.id))
     .where(whereClause)
-    .groupBy(disciplineIncidents.id)
+    .groupBy(disciplineIncidents.id, users.email, users.role)
     .orderBy(desc(disciplineIncidents.incidentDate), desc(disciplineIncidents.id));
 
     const countQuery = db.select({ count: sql<number>`count(distinct ${disciplineIncidents.id})` })
