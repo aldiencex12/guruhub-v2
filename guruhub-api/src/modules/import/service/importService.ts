@@ -167,6 +167,30 @@ export class ImportService {
    */
   async importStudents(file: File, schoolId: number, userId: number): Promise<any> {
     const rows = await this.parseExcel(file);
+const RELIGION_MAP: Record<string, "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu"> = {
+  "islam": "Islam",
+  "kristen": "Kristen",
+  "katolik": "Katolik",
+  "hindu": "Hindu",
+  "buddha": "Buddha",
+  "khonghucu": "Khonghucu",
+  "konghucu": "Khonghucu",
+};
+
+function normalizeReligion(val: string): "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu" | null {
+  if (!val) return null;
+  const key = String(val).trim().toLowerCase();
+  return RELIGION_MAP[key] || null;
+}
+
+function normalizeGender(val: string): "L" | "P" | null {
+  if (!val) return null;
+  const g = String(val).trim().toUpperCase();
+  if (g === "L" || g === "LAKI-LAKI" || g === "LAKI LAKI" || g === "MALE") return "L";
+  if (g === "P" || g === "PEREMPUAN" || g === "FEMALE") return "P";
+  return null;
+}
+
     const errors = await this.validateStudents(rows, schoolId);
     if (errors.length > 0) {
       return { success: false, errors };
@@ -177,8 +201,8 @@ export class ImportService {
       schoolId,
       nisn: r.nisn,
       name: r.name,
-      gender: r.gender as "L" | "P",
-      religion: (r.religion || "Islam") as "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu",
+      gender: normalizeGender(r.gender) || "L",
+      religion: normalizeReligion(r.religion) || "Islam",
       status: "Aktif" as const
     }));
 
@@ -579,7 +603,7 @@ export class ImportService {
       }
 
       // gender check
-      if (!r.gender || (r.gender !== "L" && r.gender !== "P")) {
+      if (!r.gender || !normalizeGender(r.gender)) {
         errors.push({ row: rowNum, column: "gender", reason: "Gender harus L atau P" });
       }
 
@@ -605,7 +629,7 @@ export class ImportService {
       // religion check
       if (!r.religion) {
         errors.push({ row: rowNum, column: "religion", reason: "Agama wajib diisi" });
-      } else if (!VALID_RELIGIONS.has(r.religion)) {
+      } else if (!normalizeReligion(r.religion)) {
         errors.push({ row: rowNum, column: "religion", reason: "Agama harus salah satu dari: Islam, Kristen, Katolik, Hindu, Buddha, Khonghucu" });
       }
 
