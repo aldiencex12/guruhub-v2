@@ -15,9 +15,9 @@ export class ClassesService {
   async getAllClasses(
     schoolId: number,
     user: UserContext,
-    options: { page: number; limit: number; search?: string; status?: "Aktif" | "Nonaktif"; allowedClassIds?: number[] }
+    options: { page: number; limit: number; search?: string; status?: "Aktif" | "Nonaktif"; allowedClassIds?: number[]; all?: boolean }
   ) {
-    if (user.role === "Teacher" || user.role === "HomeroomTeacher") {
+    if (!options.all && (user.role === "Teacher" || user.role === "HomeroomTeacher")) {
       const myTeacherId = await getTeacherIdFromUserId(schoolId, user.id);
       
       const scheds = await db

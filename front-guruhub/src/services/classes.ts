@@ -9,6 +9,7 @@ export const classesService = {
     if (params?.gradeLevel) query.append("gradeLevel", params.gradeLevel);
     if (params?.status) query.append("status", params.status);
     query.append("limit", String(params?.limit || 500));
+    query.append("all", "true");
     const queryString = query.toString();
     if (queryString) path += `?${queryString}`;
     const res: ApiResponse<Class[]> = await api.get(path);

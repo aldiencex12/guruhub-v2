@@ -8,8 +8,9 @@ export class ClassesController {
     const limit = query.limit ? parseInt(query.limit, 10) : 500;
     const search = query.search || undefined;
     const status = query.status || undefined;
+    const all = query.all === "true" || query.all === "1";
 
-    const result = await classesService.getAllClasses(schoolId, user, { page, limit, search, status });
+    const result = await classesService.getAllClasses(schoolId, user, { page, limit, search, status, all });
     return {
       success: true,
       message: "Daftar kelas berhasil diambil",
