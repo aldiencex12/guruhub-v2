@@ -27,17 +27,30 @@ export class AuthService {
       throw new BadRequestError("Konfigurasi sekolah tidak ditemukan di server");
     }
 
-    // 1. Validasi sekolah
-    const school = await this.repository.findSchoolById(schoolId);
+    let school = await this.repository.findSchoolById(schoolId);
+    let activeSchoolId = schoolId;
+
     if (!school) {
-      throw new NotFoundError("Sekolah tidak ditemukan");
+      school = await this.repository.findFirstSchool();
+      if (school) {
+        activeSchoolId = school.id;
+      } else {
+        throw new NotFoundError("Sekolah tidak ditemukan");
+      }
     }
 
     // 2. Cari user berdasarkan email
-    const user = await this.repository.findUserByEmail(schoolId, email);
+    let user = await this.repository.findUserByEmail(activeSchoolId, email);
+    if (!user) {
+      user = await this.repository.findUserByEmailAnySchool(email);
+      if (user) {
+        activeSchoolId = user.schoolId;
+      }
+    }
+
     if (!user) {
       await this.repository.createAuditLog({
-        schoolId,
+        schoolId: activeSchoolId,
         action: "LOGIN_FAILED",
         tableName: "users",
         ipAddress,
@@ -49,7 +62,7 @@ export class AuthService {
     // 3. Validasi status user
     if (user.status === "Nonaktif") {
       await this.repository.createAuditLog({
-        schoolId,
+        schoolId: activeSchoolId,
         userId: user.id,
         action: "LOGIN_FAILED",
         tableName: "users",
@@ -64,7 +77,7 @@ export class AuthService {
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
     if (!isPasswordValid) {
       await this.repository.createAuditLog({
-        schoolId,
+        schoolId: activeSchoolId,
         userId: user.id,
         action: "LOGIN_FAILED",
         tableName: "users",
@@ -82,7 +95,7 @@ export class AuthService {
 
     // 6. Simpan sesi ke database
     await this.repository.createSession({
-      schoolId,
+      schoolId: activeSchoolId,
       userId: user.id,
       tokenId,
       userAgent,
@@ -92,7 +105,7 @@ export class AuthService {
 
     // 7. Catat audit log sukses
     await this.repository.createAuditLog({
-      schoolId,
+      schoolId: activeSchoolId,
       userId: user.id,
       action: "LOGIN_SUCCESS",
       tableName: "users",
@@ -104,14 +117,14 @@ export class AuthService {
     // 8. Generate JWT
     const accessToken = signAccessToken({
       userId: user.id,
-      schoolId,
+      schoolId: activeSchoolId,
       email: user.email,
       role: user.role,
     });
 
     const refreshToken = signRefreshToken({
       userId: user.id,
-      schoolId,
+      schoolId: activeSchoolId,
       tokenId,
     });
 
@@ -120,7 +133,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
-        schoolId,
+        schoolId: activeSchoolId,
       },
       accessToken,
       refreshToken,

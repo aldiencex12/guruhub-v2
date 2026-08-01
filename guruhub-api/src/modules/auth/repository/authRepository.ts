@@ -11,11 +11,25 @@ export class AuthRepository {
     return result[0] || null;
   }
 
+  async findFirstSchool() {
+    const result = await db.select().from(schools).limit(1);
+    return result[0] || null;
+  }
+
   async findUserByEmail(schoolId: number, email: string) {
     const result = await db
       .select()
       .from(users)
       .where(and(eq(users.schoolId, schoolId), eq(users.email, email)))
+      .limit(1);
+    return result[0] || null;
+  }
+
+  async findUserByEmailAnySchool(email: string) {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
       .limit(1);
     return result[0] || null;
   }
