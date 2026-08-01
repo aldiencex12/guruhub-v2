@@ -216,8 +216,9 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
-# Buka Port Firewall (Nginx HTTP/HTTPS & SSH)
+# Buka Port Firewall (Nginx HTTP/HTTPS, Mobile 3002 & SSH)
 ufw allow 'Nginx Full'
+ufw allow 3002/tcp
 ufw allow OpenSSH
 echo "y" | ufw enable || true
 
@@ -226,8 +227,9 @@ SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
 echo -e "\n${GREEN}====================================================================${NC}"
 echo -e "${GREEN}🎉 SETUP SERVER DELL R360 & DEPLOYMENT GURUHUB v2 SUKSES!           ${NC}"
 echo -e "${GREEN}====================================================================${NC}"
-echo -e "Aplikasi GuruHub dapat diakses langsung via browser di:"
-echo -e "${BLUE}👉 http://${SERVER_IP}${NC}"
+echo -e "Aplikasi GuruHub dapat diakses via browser di:"
+echo -e "${BLUE}👉 Desktop Web  : http://${SERVER_IP}${NC}"
+echo -e "${BLUE}👉 Mobile Web   : http://${SERVER_IP}:3002${NC}"
 echo -e ""
 echo -e "Status Layanan PM2:"
 pm2 status
