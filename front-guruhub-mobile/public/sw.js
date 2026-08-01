@@ -1,94 +1,47 @@
-const CACHE_NAME = "guruhub-mobile-cache-v1";
-const ASSETS_TO_CACHE = [
-  "/",
-  "/logo-hangtuah.png",
-];
+const CACHE_NAME = "guruhub-mobile-cache-v3";
 
-// Install Event
+// Install Event - skip waiting immediately to activate new SW
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
 });
 
-// Activate Event
+// Activate Event - purge ALL old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map((key) => caches.delete(key))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch Event (Network-first with Cache fallback for APIs, Cache-first for assets)
+// Fetch Event - Network First for ALL HTML and JS pages, Network Only for APIs
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Exclude protocols other than http and https (like chrome-extension)
+  // Exclude non-http(s)
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  // Let API requests go network-first
+  // Network Only for API and Auth
   if (url.pathname.startsWith("/auth") || url.pathname.includes("/api")) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request);
-      })
-    );
     return;
   }
 
-  // HTML page navigations: Network-first with Cache fallback
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request);
-        })
-    );
-    return;
-  }
-
-  // Assets and pages: Cache-first
+  // Network First strategy for HTML/JS/CSS to ensure users always receive latest app build
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
-        if (
-          response &&
-          response.status === 200 &&
-          (url.pathname.endsWith(".png") ||
-            url.pathname.endsWith(".js") ||
-            url.pathname.endsWith(".css") ||
-            url.pathname.includes("/_next/"))
-        ) {
-          const responseToCache = response.clone();
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === "GET") {
+          const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
-        return response;
-      });
-    })
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });
