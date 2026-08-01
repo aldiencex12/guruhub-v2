@@ -78,6 +78,7 @@ PROJECT_DIR=$(pwd)
 cat <<EOF > "$PROJECT_DIR/guruhub-api/.env"
 DATABASE_URL="mysql://${DB_USER}:${DB_PASS}@localhost:3306/${DB_NAME}"
 JWT_SECRET="guruhub-super-secret-jwt-key-2026-dell-r360-production"
+DEFAULT_SCHOOL_ID=719
 PORT=3000
 NODE_ENV=production
 EOF

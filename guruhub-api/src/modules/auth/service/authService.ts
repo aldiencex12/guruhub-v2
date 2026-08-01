@@ -9,8 +9,8 @@ import type { RefreshTokenPayload } from "../../../utils/jwt";
 import { BadRequestError, UnauthorizedError, NotFoundError } from "../../../errors/customErrors";
 import { randomUUID } from "crypto";
 
-// Baca School ID dari environment (single-tenant)
-const DEFAULT_SCHOOL_ID = parseInt(process.env.DEFAULT_SCHOOL_ID || "0", 10);
+// Baca School ID dari environment (single-tenant, default school 719)
+const DEFAULT_SCHOOL_ID = parseInt(process.env.DEFAULT_SCHOOL_ID || "719", 10);
 
 export class AuthService {
   private repository = new AuthRepository();
