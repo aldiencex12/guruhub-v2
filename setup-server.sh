@@ -28,9 +28,11 @@ fi
 echo -e "\n${YELLOW}📦 [1/7] Mengurangi & Memperbarui Package OS...${NC}"
 apt install -y curl git unzip build-essential nginx mariadb-server ufw \
   libnss3 libnspr4 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 fonts-liberation \
+  libx11-6 libx11-xcb1 libxcb1 libxext6 libxfixes3 libxi6 libxrender1 libxss1 libxtst6 \
   libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 2>/dev/null || \
 apt install -y curl git unzip build-essential nginx mariadb-server ufw \
   libnss3 libnspr4 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 fonts-liberation \
+  libx11-6 libx11-xcb1 libxcb1 libxext6 libxfixes3 libxi6 libxrender1 libxss1 libxtst6 \
   libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2
 
 # 3. Install Node.js (v20 LTS), Bun Runtime & PM2
