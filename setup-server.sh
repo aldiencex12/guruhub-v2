@@ -55,6 +55,8 @@ if ! command -v bun &> /dev/null; then
     export PATH="$BUN_INSTALL/bin:$PATH"
     echo 'export BUN_INSTALL="$HOME/.bun"' >> ~/.bashrc
     echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> ~/.bashrc
+    ln -sf "$HOME/.bun/bin/bun" /usr/local/bin/bun 2>/dev/null || true
+    ln -sf "$HOME/.bun/bin/bun" /usr/bin/bun 2>/dev/null || true
 fi
 
 # PM2 Process Manager
