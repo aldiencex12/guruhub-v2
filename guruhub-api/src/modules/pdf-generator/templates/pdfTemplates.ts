@@ -1139,19 +1139,8 @@ export function generateInterimReportCardHtml(data: {
     </div>` : ''}
 
     ${(() => {
-      const formatTitleCaseName = (str?: string | null): string => {
-        if (!str) return "";
-        return str
-          .toLowerCase()
-          .split(" ")
-          .map(word => {
-            if (!word) return word;
-            return word.replace(/(^|\.)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase());
-          })
-          .join(" ");
-      };
-      const teacherName = data.homeroomTeacherName ? formatTitleCaseName(data.homeroomTeacherName) : "...................................";
-      const principalName = data.school.principalName ? formatTitleCaseName(data.school.principalName) : "...................................";
+      const teacherName = data.homeroomTeacherName || "...................................";
+      const principalName = data.school.principalName || "...................................";
 
       return `
       <div style="font-family: 'Times New Roman', Times, serif; font-size: 10pt; page-break-inside: avoid; margin-top: 20px;">
