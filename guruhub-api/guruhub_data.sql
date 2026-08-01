@@ -979,6 +979,7 @@ CREATE TABLE `subjects` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `grade_level` enum('7','8','9','10','11','12') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `religion_group` enum('Islam','Kristen','Katolik','Hindu','Buddha','Khonghucu','UMUM') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UMUM',
   `created_at` timestamp NULL DEFAULT (now()),
   `updated_at` timestamp NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,

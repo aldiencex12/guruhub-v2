@@ -291,3 +291,6 @@ INSERT IGNORE INTO `discipline_sanction_thresholds` (`id`, `school_id`, `min_poi
 (303, 719, 60, 'Surat Peringatan Pertama (SP 1)', 'SURAT_PERINGATAN', 'Penerbitan SP 1 dan perjanjian tertulis'),
 (304, 719, 80, 'Skorsing 3 Hari', 'SKORSING', 'Siswa belajar di rumah selama 3 hari kerja'),
 (305, 719, 100, 'Dikembalikan kepada Orang Tua', 'DIKELUARKAN', 'Pemberhentian hak siswa belajar di sekolah secara permanen');
+
+-- Ensure subjects table has religion_group column
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS religion_group enum('Islam','Kristen','Katolik','Hindu','Buddha','Khonghucu','UMUM') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UMUM';

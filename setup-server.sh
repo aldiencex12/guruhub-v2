@@ -113,6 +113,7 @@ ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_url longtext DEFAULT NULL;
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS kop_surat_url longtext DEFAULT NULL;
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_name varchar(255) DEFAULT NULL;
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_nip varchar(50) DEFAULT NULL;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS religion_group enum('Islam','Kristen','Katolik','Hindu','Buddha','Khonghucu','UMUM') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UMUM';
 ALTER TABLE users MODIFY COLUMN role enum('SuperAdmin','SchoolAdmin','Principal','Teacher','HomeroomTeacher','BKTeacher','Counselor','Student','Polsis') NOT NULL;
 SQL_END
 
