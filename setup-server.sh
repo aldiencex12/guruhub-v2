@@ -94,12 +94,28 @@ cd "$PROJECT_DIR/guruhub-api"
 
 # Import database schema & seed data if table 'schools' doesn't exist
 if mysql "${DB_NAME}" -e "DESCRIBE schools;" &>/dev/null; then
-    echo -e "${GREEN}✅ Database ${DB_NAME} sudah memiliki tabel! Skipping import.${NC}"
+    echo -e "${GREEN}✅ Database ${DB_NAME} sudah memiliki tabel!${NC}"
 else
     echo -e "${YELLOW}📥 Mengimpor skema & data awal guruhub_data.sql ke MariaDB...${NC}"
     mysql "${DB_NAME}" < "$PROJECT_DIR/guruhub-api/guruhub_data.sql"
     echo -e "${GREEN}✅ Database ${DB_NAME} berhasil diisi dari guruhub_data.sql!${NC}"
 fi
+
+# Schema Patch for missing columns / enums in MariaDB
+echo -e "${YELLOW}🛠️ Memverifikasi & memperbarui struktur tabel MariaDB...${NC}"
+mysql "${DB_NAME}" << 'SQL_END'
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS foundation_name varchar(255) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS regional_name varchar(255) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS accreditation varchar(100) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS email varchar(255) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS website varchar(255) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_url longtext DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS kop_surat_url longtext DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_name varchar(255) DEFAULT NULL;
+ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_nip varchar(50) DEFAULT NULL;
+ALTER TABLE users MODIFY COLUMN role enum('SuperAdmin','SchoolAdmin','Principal','Teacher','HomeroomTeacher','BKTeacher','Counselor','Student','Polsis') NOT NULL;
+SQL_END
+echo -e "${GREEN}✅ Skema tabel database MariaDB terverifikasi lengkap!${NC}"
 
 # Frontend Main App
 echo -e "${BLUE}▶ Processing Frontend (front-guruhub)...${NC}"
