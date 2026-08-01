@@ -477,6 +477,7 @@ export default function DisciplineIncidentsPage() {
                   </th>
                   <th className="px-4 py-3">Tanggal / Waktu</th>
                   <th className="px-4 py-3">Siswa & Kelas</th>
+                  <th className="px-4 py-3">Pelapor</th>
                   <th className="px-4 py-3">Jenis Pelanggaran</th>
                   <th className="px-4 py-3">Lokasi</th>
                   <th className="px-4 py-3 text-center">Demerit</th>
@@ -533,9 +534,16 @@ export default function DisciplineIncidentsPage() {
                         <span className="text-xs text-muted-foreground block">
                           {incident.className ? `Kelas: ${incident.className}` : ""}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 px-1.5 py-0.5 rounded font-bold mt-1">
-                          👤 Pelapor: {incident.reporterName || incident.reporterEmail || "Sistem"} {incident.reporterRole ? `(${incident.reporterRole})` : ""}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className="font-semibold text-foreground block">
+                          {incident.reporterName || incident.reporterEmail || "Sistem"}
                         </span>
+                        {incident.reporterRole && (
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-bold uppercase">
+                            {incident.reporterRole}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs">
                         <span className="font-semibold text-foreground block">
