@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, X, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,13 @@ export function SearchableSelectModal({
   placeholder = "Cari...",
 }: SearchableSelectModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Reset search when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery("");
+    }
+  }, [isOpen]);
 
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return options;
@@ -82,7 +89,6 @@ export function SearchableSelectModal({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={placeholder}
               className="w-full pl-9 pr-9 py-2.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-xs"
-              autoFocus
             />
             {searchQuery && (
               <button

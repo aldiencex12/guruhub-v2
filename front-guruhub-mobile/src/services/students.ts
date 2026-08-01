@@ -21,7 +21,7 @@ export const studentsService = {
   },
 
   getByClass: async (classId: number): Promise<Student[]> => {
-    const res: any = await api.get(`/students?classId=${classId}`);
+    const res: any = await api.get(`/students?classId=${classId}&limit=500`);
     if (Array.isArray(res)) return res;
     if (Array.isArray(res?.data)) return res.data;
     if (Array.isArray(res?.data?.data)) return res.data.data;
