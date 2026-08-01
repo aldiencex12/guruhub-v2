@@ -5,15 +5,24 @@ const getApiUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   if (typeof window !== "undefined") {
-    // If accessing via remote server IP / domain on custom ports, route API calls through Nginx port 80 /api
-    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-      return `${window.location.protocol}//${window.location.hostname}/api`;
+    const host = window.location.hostname;
+
+    // Cloudflare Tunnel or Custom Domain setup (e.g. *.cbt-smpht5.my.id)
+    if (host.endsWith("cbt-smpht5.my.id") || host.includes("cbt-smpht5")) {
+      return `${window.location.protocol}//api.cbt-smpht5.my.id`;
     }
-    // If running directly on dev ports 3001/3002 locally
+
+    // Direct IP Access (e.g. http://10.40.40.55:3002 or http://36.78.126.229:3002)
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+      return `${window.location.protocol}//${host}/api`;
+    }
+
+    // Local dev ports 3001/3002
     if (window.location.port === "3001" || window.location.port === "3002") {
-      return `http://${window.location.hostname}:3000`;
+      return `http://${host}:3000`;
     }
-    // Behind Nginx Reverse Proxy or Cloudflare Tunnel (same origin /api)
+
+    // Default reverse proxy (same origin /api)
     return `${window.location.origin}/api`;
   }
   return "http://localhost:3000";
