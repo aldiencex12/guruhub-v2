@@ -90,7 +90,15 @@ echo -e "\n${YELLOW}🔨 [5/7] Menginstall Dependensi & Rebuild Aplikasi...${NC}
 echo -e "${BLUE}▶ Processing Backend API (guruhub-api)...${NC}"
 cd "$PROJECT_DIR/guruhub-api"
 /root/.bun/bin/bun install || bun install
-/root/.bun/bin/bun run drizzle-kit push || bun run drizzle-kit push
+
+# Import database schema & seed data if table 'schools' doesn't exist
+if mysql "${DB_NAME}" -e "DESCRIBE schools;" &>/dev/null; then
+    echo -e "${GREEN}✅ Database ${DB_NAME} sudah memiliki tabel! Skipping import.${NC}"
+else
+    echo -e "${YELLOW}📥 Mengimpor skema & data awal guruhub_data.sql ke MariaDB...${NC}"
+    mysql "${DB_NAME}" < "$PROJECT_DIR/guruhub-api/guruhub_data.sql"
+    echo -e "${GREEN}✅ Database ${DB_NAME} berhasil diisi dari guruhub_data.sql!${NC}"
+fi
 
 # Frontend Main App
 echo -e "${BLUE}▶ Processing Frontend (front-guruhub)...${NC}"
