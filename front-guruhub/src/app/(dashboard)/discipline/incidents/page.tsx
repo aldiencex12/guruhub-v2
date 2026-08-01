@@ -546,12 +546,19 @@ export default function DisciplineIncidentsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        <span className="font-semibold text-foreground block">
-                          {incident.typeName || incident.description || "Pelanggaran Aturan"}
-                        </span>
-                        {incident.description && (
-                          <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{incident.description}</span>
-                        )}
+                        {(() => {
+                          const cleanDesc = incident.description?.replace(/^\[Rekap POLSIS\]:\s*/i, "").trim();
+                          return (
+                            <>
+                              <span className="font-semibold text-foreground block">
+                                {incident.typeName || cleanDesc || "Pelanggaran Aturan"}
+                              </span>
+                              {cleanDesc && (
+                                <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{cleanDesc}</span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {incident.location || "Sekolah"}

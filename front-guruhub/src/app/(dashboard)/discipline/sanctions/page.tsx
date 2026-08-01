@@ -1078,8 +1078,15 @@ export default function DisciplineSanctionsPage() {
                                 {inc.incidentDate ? new Date(inc.incidentDate).toLocaleDateString("id-ID") : "-"}
                               </td>
                               <td className="py-1.5 px-2 font-semibold text-black">
-                                {inc.typeName || inc.description || "Pelanggaran Tata Tertib"}
-                                {inc.description && <span className="block text-[10px] font-normal text-black mt-0.5">{inc.description}</span>}
+                                {(() => {
+                                  const cleanDesc = inc.description?.replace(/^\[Rekap POLSIS\]:\s*/i, "").trim();
+                                  return (
+                                    <>
+                                      {inc.typeName || cleanDesc || "Pelanggaran Tata Tertib"}
+                                      {cleanDesc && <span className="block text-[10px] font-normal text-black mt-0.5">{cleanDesc}</span>}
+                                    </>
+                                  );
+                                })()}
                               </td>
                               <td className="py-1.5 px-2 text-black">
                                 {inc.location || "Lingkungan Sekolah"}

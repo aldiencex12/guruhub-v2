@@ -23,6 +23,8 @@ import { importRoutes } from "./modules/import/routes/importRoutes";
 import { disciplineRoutes } from "./modules/discipline/routes/disciplineRoutes";
 import { schoolsRoutes } from "./modules/schools/routes/schoolsRoutes";
 import { swagger } from "@elysiajs/swagger";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { cors } from "@elysiajs/cors";
 
 const app = new Elysia()
@@ -126,6 +128,9 @@ const app = new Elysia()
   });
 
 console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
+
+// Clean up legacy [Rekap POLSIS]: prefixes in database records
+db.execute(sql`UPDATE discipline_incidents SET description = TRIM(REPLACE(description, '[Rekap POLSIS]:', '')) WHERE description LIKE '%[Rekap POLSIS]:%'`).catch(() => {});
 app.onError(({ code, error, request, set }) => {
   console.error(`[Global Error] ${request.method} ${request.url}:`, error.message || error);
   if (!set.status || set.status === 200) {
