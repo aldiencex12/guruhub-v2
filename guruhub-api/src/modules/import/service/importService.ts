@@ -20,6 +20,30 @@ export interface PreviewResponse {
   errors: ImportError[];
 }
 
+const RELIGION_MAP: Record<string, "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu"> = {
+  "islam": "Islam",
+  "kristen": "Kristen",
+  "katolik": "Katolik",
+  "hindu": "Hindu",
+  "buddha": "Buddha",
+  "khonghucu": "Khonghucu",
+  "konghucu": "Khonghucu",
+};
+
+function normalizeReligion(val: string): "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu" | null {
+  if (!val) return null;
+  const key = String(val).trim().toLowerCase();
+  return RELIGION_MAP[key] || null;
+}
+
+function normalizeGender(val: string): "L" | "P" | null {
+  if (!val) return null;
+  const g = String(val).trim().toUpperCase();
+  if (g === "L" || g === "LAKI-LAKI" || g === "LAKI LAKI" || g === "MALE") return "L";
+  if (g === "P" || g === "PEREMPUAN" || g === "FEMALE") return "P";
+  return null;
+}
+
 export class ImportService {
   private repo = new ImportRepository();
 
@@ -167,30 +191,6 @@ export class ImportService {
    */
   async importStudents(file: File, schoolId: number, userId: number): Promise<any> {
     const rows = await this.parseExcel(file);
-const RELIGION_MAP: Record<string, "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu"> = {
-  "islam": "Islam",
-  "kristen": "Kristen",
-  "katolik": "Katolik",
-  "hindu": "Hindu",
-  "buddha": "Buddha",
-  "khonghucu": "Khonghucu",
-  "konghucu": "Khonghucu",
-};
-
-function normalizeReligion(val: string): "Islam" | "Kristen" | "Katolik" | "Hindu" | "Buddha" | "Khonghucu" | null {
-  if (!val) return null;
-  const key = String(val).trim().toLowerCase();
-  return RELIGION_MAP[key] || null;
-}
-
-function normalizeGender(val: string): "L" | "P" | null {
-  if (!val) return null;
-  const g = String(val).trim().toUpperCase();
-  if (g === "L" || g === "LAKI-LAKI" || g === "LAKI LAKI" || g === "MALE") return "L";
-  if (g === "P" || g === "PEREMPUAN" || g === "FEMALE") return "P";
-  return null;
-}
-
     const errors = await this.validateStudents(rows, schoolId);
     if (errors.length > 0) {
       return { success: false, errors };
