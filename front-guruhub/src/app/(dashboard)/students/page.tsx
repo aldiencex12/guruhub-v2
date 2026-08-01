@@ -59,6 +59,9 @@ export default function StudentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<Student | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Student | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importErrors, setImportErrors] = useState<Array<{ row: number; column: string; reason: string }>>([]);
