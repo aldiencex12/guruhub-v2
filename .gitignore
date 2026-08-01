@@ -1,0 +1,23 @@
+# Node & Build artifacts
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Python virtualenv
+.venv/
+__pycache__/
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+
+# Graphify build output (optional/generated)
+graphify-out/

@@ -1,0 +1,1 @@
+ALTER TABLE `teachers` ADD `deleted_at` timestamp;

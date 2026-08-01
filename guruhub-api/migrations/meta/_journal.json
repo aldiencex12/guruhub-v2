@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1781536925871,
+      "tag": "0000_breezy_tigra",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1781537157066,
+      "tag": "0001_spooky_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781538101809,
+      "tag": "0002_heavy_tomorrow_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1781538249225,
+      "tag": "0003_polite_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1781538480779,
+      "tag": "0004_shiny_emma_frost",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1781538640032,
+      "tag": "0005_sharp_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1784341445157,
+      "tag": "0006_lush_la_nuit",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1784823213972,
+      "tag": "0008_discipline_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1784991554280,
+      "tag": "0008_fuzzy_johnny_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1784991566832,
+      "tag": "0009_lyrical_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1784991578674,
+      "tag": "0010_clear_maximus",
+      "breakpoints": true
+    }
+  ]
+}

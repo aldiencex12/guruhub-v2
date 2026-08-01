@@ -1,0 +1,20 @@
+# Ignore non-essential build/generated/vendor files to optimize graphify token reduction
+node_modules/
+.next/
+dist/
+build/
+.cache/
+*.lock
+bun.lock
+bun.lockb
+package-lock.json
+pnpm-lock.yaml
+*.min.js
+*.min.css
+*.map
+*.snap
+drizzle/meta/
+drizzle/migrations/
+graphify-out/
+.venv/
+*.bak

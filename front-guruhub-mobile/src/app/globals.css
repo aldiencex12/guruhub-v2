@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a; /* slate-900 */
+}
+
+/* Force dark mode to be class-based and never active since .dark class is not added */
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Override indigo with beautiful blue/royal-blue tones to make the app dominantly blue and white */
+  --color-indigo-50: #eff6ff;   /* blue-50 */
+  --color-indigo-100: #dbeafe;  /* blue-100 */
+  --color-indigo-150: #eff6ff;  /* very soft blue */
+  --color-indigo-200: #bfdbfe;  /* blue-200 */
+  --color-indigo-500: #3b82f6;  /* blue-500 */
+  --color-indigo-600: #1d4ed8;  /* blue-700 - royal/primary blue */
+  --color-indigo-700: #1e40af;  /* blue-800 */
+  --color-indigo-850: #1e40af;
+  --color-indigo-800: #1e3a8a;  /* blue-900 */
+  --color-indigo-900: #172554;  /* blue-950 */
+  --color-indigo-950: #0f172a;
+
+  /* Redefine gray transitions slightly brighter for a cleaner look */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-150: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media print {
+  /* Reset tailwind layout wrappers for proper multi-page print */
+  html,
+  body,
+  #root,
+  body > div,
+  main,
+  .h-screen,
+  .overflow-hidden,
+  .overflow-y-auto {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
+  }
+
+  aside,
+  header,
+  nav,
+  footer,
+  button,
+  .no-print,
+  .print-hidden,
+  [role="tablist"],
+  .filters-section {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  main,
+  .print-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Force print background colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+  }
+}

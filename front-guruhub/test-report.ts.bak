@@ -1,0 +1,14 @@
+import { db } from "../guruhub/src/db";
+import { ReportCardService } from "../guruhub/src/modules/report-cards/service/reportCardService";
+
+async function main() {
+  try {
+    const service = new ReportCardService();
+    const reports = await service.getAllReportCards(1, { id: 1, role: "SuperAdmin" } as any, {});
+    console.log(JSON.stringify(reports, null, 2));
+  } catch (err) {
+    console.error("Error:", err);
+  }
+  process.exit(0);
+}
+main();
