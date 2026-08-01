@@ -147,9 +147,9 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Backend API Service
-    location /api {
-        proxy_pass http://127.0.0.1:3000;
+    # Backend API Service (Strips /api/ prefix before forwarding to Elysia)
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
