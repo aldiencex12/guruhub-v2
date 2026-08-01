@@ -387,7 +387,7 @@ export default function DisciplineSanctionsPage() {
             setIsModalOpen(false);
             refetchThresholds();
           },
-          onError: () => toast.error("Gagal memperbarui ambang batas sanksi."),
+          onError: (err: any) => toast.error(err?.message || "Gagal memperbarui ambang batas sanksi."),
         }
       );
     } else {
@@ -397,7 +397,7 @@ export default function DisciplineSanctionsPage() {
           setIsModalOpen(false);
           refetchThresholds();
         },
-        onError: () => toast.error("Gagal menambahkan ambang batas sanksi."),
+        onError: (err: any) => toast.error(err?.message || "Gagal menambahkan ambang batas sanksi."),
       });
     }
   };

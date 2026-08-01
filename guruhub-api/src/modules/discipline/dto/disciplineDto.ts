@@ -144,14 +144,14 @@ export const UpdateSanctionStatusDto = t.Object({
 
 // 6. Thresholds
 export const UpdateThresholdDto = t.Object({
-  minPoints: t.Number({ minimum: 1, maximum: 9999, error: "Minimum poin harus antara 1-9999" }),
+  minPoints: t.Numeric({ minimum: 1, maximum: 9999, error: "Minimum poin harus antara 1-9999" }),
   label: t.Optional(t.String({ maxLength: 100 })),
   actionRequired: t.String({ minLength: 1, maxLength: 100, error: "Tindakan wajib diisi" }),
   description: t.Optional(t.String({ maxLength: 500 }))
 });
 
 export const CreateThresholdDto = t.Object({
-  minPoints: t.Number({ minimum: 1, maximum: 9999, error: "Minimum poin harus antara 1-9999" }),
+  minPoints: t.Numeric({ minimum: 1, maximum: 9999, error: "Minimum poin harus antara 1-9999" }),
   label: t.Optional(t.String({ maxLength: 100 })),
   actionRequired: t.String({ minLength: 1, maxLength: 100, error: "Tindakan wajib diisi" }),
   description: t.Optional(t.String({ maxLength: 500 }))
