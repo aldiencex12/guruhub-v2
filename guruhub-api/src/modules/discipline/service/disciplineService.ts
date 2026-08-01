@@ -386,11 +386,23 @@ export class DisciplineService {
   }
 
   async createThreshold(schoolId: number, data: any) {
-    return await this.repository.createThreshold(schoolId, data);
+    const payload = {
+      minPoints: Number(data.minPoints),
+      sanctionName: data.label || data.sanctionName || "Ambang Batas Poin",
+      actionRequired: data.actionRequired || "PEMBINAAN_BK",
+      description: data.description || null,
+    };
+    return await this.repository.createThreshold(schoolId, payload);
   }
 
   async updateThreshold(schoolId: number, thresholdId: number, data: any) {
-    return await this.repository.updateThreshold(schoolId, thresholdId, data);
+    const payload: any = {};
+    if (data.minPoints !== undefined) payload.minPoints = Number(data.minPoints);
+    if (data.label || data.sanctionName) payload.sanctionName = data.label || data.sanctionName;
+    if (data.actionRequired) payload.actionRequired = data.actionRequired;
+    if (data.description !== undefined) payload.description = data.description;
+
+    return await this.repository.updateThreshold(schoolId, thresholdId, payload);
   }
 
   async deleteThreshold(schoolId: number, thresholdId: number) {
