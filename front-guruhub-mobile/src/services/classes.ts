@@ -8,7 +8,7 @@ export const classesService = {
     if (params?.academicYearId) query.append("academicYearId", String(params.academicYearId));
     if (params?.gradeLevel) query.append("gradeLevel", params.gradeLevel);
     if (params?.status) query.append("status", params.status);
-    if (params?.limit) query.append("limit", String(params.limit));
+    query.append("limit", String(params?.limit || 500));
     const queryString = query.toString();
     if (queryString) path += `?${queryString}`;
     const res: any = await api.get(path);

@@ -5,7 +5,7 @@ const classesService = new ClassesService();
 export class ClassesController {
   async getAll({ schoolId, user, query }: any) {
     const page = query.page ? parseInt(query.page, 10) : 1;
-    const limit = query.limit ? parseInt(query.limit, 10) : 10;
+    const limit = query.limit ? parseInt(query.limit, 10) : 500;
     const search = query.search || undefined;
     const status = query.status || undefined;
 
