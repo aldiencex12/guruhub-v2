@@ -162,21 +162,58 @@ echo -e "\n${YELLOW}🌐 [7/7] Mengonfigurasi Nginx Web Server & Firewall...${NC
 NGINX_CONF="/etc/nginx/sites-available/guruhub"
 
 cat <<'EOF' > $NGINX_CONF
+# Server Block: Backend API (api.cbt-smpht5.my.id)
+server {
+    listen 80;
+    server_name api.cbt-smpht5.my.id apiv1.cbt-smpht5.my.id;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Server Block: Mobile Web App (mobile.cbt-smpht5.my.id)
+server {
+    listen 80;
+    server_name mobile.cbt-smpht5.my.id;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Server Block: Default / Main Web App (guruhub.cbt-smpht5.my.id)
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
-    server_name _;
+    server_name _ guruhub.cbt-smpht5.my.id;
 
     client_max_body_size 50M;
 
-    # Gzip Compression
     gzip on;
     gzip_proxied any;
     gzip_comp_level 6;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-    # Frontend Next.js (Dashboard Utama)
     location / {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
@@ -189,7 +226,6 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Backend API Service (Strips /api/ prefix before forwarding to Elysia)
     location /api/ {
         proxy_pass http://127.0.0.1:3000/;
         proxy_http_version 1.1;
@@ -201,7 +237,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Static File Caching
     location /_next/static/ {
         proxy_pass http://127.0.0.1:3001;
         proxy_cache_valid 200 365d;
