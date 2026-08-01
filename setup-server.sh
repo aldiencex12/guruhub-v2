@@ -216,8 +216,9 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
-# Buka Port Firewall (Nginx HTTP/HTTPS, Mobile 3002 & SSH)
+# Buka Port Firewall (Nginx HTTP/HTTPS, API 3000, Mobile 3002 & SSH)
 ufw allow 'Nginx Full'
+ufw allow 3000/tcp
 ufw allow 3002/tcp
 ufw allow OpenSSH
 echo "y" | ufw enable || true

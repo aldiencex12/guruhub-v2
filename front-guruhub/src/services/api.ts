@@ -5,7 +5,11 @@ const getApiUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   if (typeof window !== "undefined") {
-    // If running directly on dev ports 3001/3002
+    // If accessing via remote server IP / domain on custom ports, route API calls through Nginx port 80 /api
+    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return `${window.location.protocol}//${window.location.hostname}/api`;
+    }
+    // If running directly on dev ports 3001/3002 locally
     if (window.location.port === "3001" || window.location.port === "3002") {
       return `http://${window.location.hostname}:3000`;
     }
