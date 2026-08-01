@@ -9,6 +9,9 @@ const getApiUrl = () => {
 
     // Cloudflare Tunnel or Custom Domain setup (e.g. *.cbt-smpht5.my.id)
     if (host.endsWith("cbt-smpht5.my.id") || host.includes("cbt-smpht5")) {
+      if (host.includes("v1")) {
+        return `${window.location.protocol}//apiv1.cbt-smpht5.my.id`;
+      }
       return `${window.location.protocol}//api.cbt-smpht5.my.id`;
     }
 
