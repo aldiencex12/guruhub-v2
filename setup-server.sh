@@ -26,8 +26,9 @@ fi
 
 # 2. Update Sistem Operasi & Package Utama
 echo -e "\n${YELLOW}📦 [1/7] Mengurangi & Memperbarui Package OS...${NC}"
-apt update && apt upgrade -y
-apt install -y curl git unzip build-essential nginx mariadb-server ufw
+apt install -y curl git unzip build-essential nginx mariadb-server ufw \
+  libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+  libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libpango-1.0-0 fonts-liberation
 
 # 3. Install Node.js (v20 LTS), Bun Runtime & PM2
 echo -e "\n${YELLOW}⚡ [2/7] Menginstall Node.js v20, Bun Runtime & PM2...${NC}"
