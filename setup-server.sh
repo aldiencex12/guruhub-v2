@@ -101,8 +101,8 @@ else
     echo -e "${GREEN}✅ Database ${DB_NAME} berhasil diisi dari guruhub_data.sql!${NC}"
 fi
 
-# Schema Patch for missing columns / enums in MariaDB
-echo -e "${YELLOW}🛠️ Memverifikasi & memperbarui struktur tabel MariaDB...${NC}"
+# Schema Patch for missing columns / enums & missing tables in MariaDB
+echo -e "${YELLOW}🛠️ Memverifikasi & memperbarui struktur tabel MariaDB (Disiplin & Rapor Sisipan)...${NC}"
 mysql "${DB_NAME}" << 'SQL_END'
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS foundation_name varchar(255) DEFAULT NULL;
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS regional_name varchar(255) DEFAULT NULL;
@@ -115,6 +115,12 @@ ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_name varchar(255) DEFAULT
 ALTER TABLE schools ADD COLUMN IF NOT EXISTS principal_nip varchar(50) DEFAULT NULL;
 ALTER TABLE users MODIFY COLUMN role enum('SuperAdmin','SchoolAdmin','Principal','Teacher','HomeroomTeacher','BKTeacher','Counselor','Student','Polsis') NOT NULL;
 SQL_END
+
+if [ -f "$PROJECT_DIR/guruhub-api/migrations_patch.sql" ]; then
+    echo -e "${YELLOW}📥 Memuat tabel disiplin & rapor sisipan (migrations_patch.sql)...${NC}"
+    mysql "${DB_NAME}" < "$PROJECT_DIR/guruhub-api/migrations_patch.sql"
+fi
+
 echo -e "${GREEN}✅ Skema tabel database MariaDB terverifikasi lengkap!${NC}"
 
 # Frontend Main App
