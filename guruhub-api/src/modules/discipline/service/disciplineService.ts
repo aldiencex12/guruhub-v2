@@ -278,14 +278,6 @@ export class DisciplineService {
       throw new NotFoundError("Laporan insiden tidak ditemukan");
     }
 
-    if (
-      details.incident.status !== "PENDING" &&
-      details.incident.status !== "UNDER_REVIEW" &&
-      details.incident.status !== "VERIFIED"
-    ) {
-      throw new BadRequestError(`Tidak dapat mengubah status dari ${details.incident.status}`);
-    }
-
     // Resolve valid teacher ID from user ID (if present)
     let teacherId: number | undefined = undefined;
     const teacher = await db.query.teachers.findFirst({
@@ -309,14 +301,27 @@ export class DisciplineService {
       newValues: { status: data.status, notes: data.notes },
     });
 
-    // If verified or resolved, calculate points and trigger auto sanctions
+    // Recalculate student active cumulative points
+    for (const student of details.students) {
+      const cumulativePoints = await this.repository.getStudentActivePoints(schoolId, student.studentId, student.academicYearId);
+      
+      // Update sanction logs with recalculated active points
+      await db.update(disciplineSanctionLogs)
+        .set({ cumulativePoints, updatedAt: new Date() })
+        .where(and(
+          eq(disciplineSanctionLogs.schoolId, schoolId),
+          eq(disciplineSanctionLogs.studentId, student.studentId),
+          eq(disciplineSanctionLogs.academicYearId, student.academicYearId)
+        ));
+    }
+
+    // If verified or resolved, trigger auto sanctions if thresholds reached
     if (data.status === "VERIFIED" || data.status === "RESOLVED") {
       const policy = await this.getPolicy(schoolId);
       const autoSanctionEnabled = policy ? policy.autoSanctionEnabled : true;
       
       if (autoSanctionEnabled) {
         for (const student of details.students) {
-          // Calculate new active points
           const cumulativePoints = await this.repository.getStudentActivePoints(schoolId, student.studentId, student.academicYearId);
           
           // Check thresholds
