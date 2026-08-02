@@ -801,7 +801,7 @@ export class PdfGeneratorService {
     }
 
     const interimService = new InterimReportCardService();
-    const reports = await interimService.getClassInterimReportCards(schoolId, classId, { academicYearId, semester });
+    const reports = await interimService.getClassInterimReportCards(schoolId, classId, academicYearId, semester);
     if (reports.length === 0) {
       throw new Error("404: Tidak ada data Raport Sisipan untuk kelas ini");
     }
