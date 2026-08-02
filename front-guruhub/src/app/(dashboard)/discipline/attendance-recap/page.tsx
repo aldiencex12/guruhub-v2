@@ -113,17 +113,28 @@ export default function BKAttendanceRecapPage() {
   const [studentStatuses, setStudentStatuses] = useState<Record<number, "PRESENT" | "SICK" | "PERMISSION" | "ABSENT">>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleOpenInputModal = () => {
+  const loadStatusesForDate = (dateStr: string) => {
+    const initialMap: Record<number, "PRESENT" | "SICK" | "PERMISSION" | "ABSENT"> = {};
+    students.forEach((st: any) => {
+      initialMap[st.studentId] = st.dailyStatus?.[dateStr] || "PRESENT";
+    });
+    setStudentStatuses(initialMap);
+  };
+
+  const handleOpenInputModal = (targetDate?: string) => {
     if (!selectedClassId) {
       toast.error("Pilih kelas terlebih dahulu");
       return;
     }
-    const initialMap: Record<number, "PRESENT" | "SICK" | "PERMISSION" | "ABSENT"> = {};
-    students.forEach((st: any) => {
-      initialMap[st.studentId] = "PRESENT";
-    });
-    setStudentStatuses(initialMap);
+    const dateToUse = targetDate || inputDate || new Date().toISOString().slice(0, 10);
+    setInputDate(dateToUse);
+    loadStatusesForDate(dateToUse);
     setIsInputModalOpen(true);
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setInputDate(newDate);
+    loadStatusesForDate(newDate);
   };
 
   const handleSetAllPresent = () => {
@@ -492,7 +503,12 @@ export default function BKAttendanceRecapPage() {
                           }
 
                           return (
-                            <td key={d} className="px-0.5 py-1.5 text-center border border-gray-400 print:border print:border-black print:text-black">
+                            <td 
+                              key={d} 
+                              onClick={() => handleOpenInputModal(d)}
+                              className="px-0.5 py-1.5 text-center border border-gray-400 print:border print:border-black print:text-black cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors"
+                              title={`Klik untuk mengedit presensi tanggal ${d}`}
+                            >
                               <span className={cn("inline-flex items-center justify-center w-6 h-6 rounded text-[11px] print:bg-transparent print:text-black", badgeClass)}>
                                 {label}
                               </span>
@@ -695,7 +711,7 @@ export default function BKAttendanceRecapPage() {
                   <input
                     type="date"
                     value={inputDate}
-                    onChange={(e) => setInputDate(e.target.value)}
+                    onChange={(e) => handleDateChange(e.target.value)}
                     className="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
                   />
                 </div>
