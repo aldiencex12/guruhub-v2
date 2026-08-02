@@ -256,7 +256,14 @@ export class AttendanceService {
     // 3. Validasi Hak Akses Guru
     await this.validateTeacherPermission(schoolId, user, schedule.teacherId);
 
-    // 4. Hard delete agar absensi bisa dibuat ulang di tanggal yang sama
+    // 4. Batalkan poin pelanggaran Alpha yang sudah tercatat jika absensi ini dihapus
+    const details = await this.repository.findAttendanceDetails(id);
+    if (details && details.length > 0) {
+      const nonAbsentDetails = details.map(d => ({ studentId: d.studentId, status: "PRESENT" }));
+      await this.handleAlphaDemeritPoints(schoolId, schedule.classId, attendance.attendanceDate, nonAbsentDetails, user.id);
+    }
+
+    // 5. Hard delete agar absensi bisa dibuat ulang di tanggal yang sama
     await this.repository.hardDeleteAttendance(schoolId, id);
   }
 
@@ -449,8 +456,9 @@ export class AttendanceService {
     details: { studentId: number; status: string }[],
     reporterUserId: number
   ) {
+    if (!details || details.length === 0) return;
+
     const absentStudents = details.filter(d => d.status === "ABSENT");
-    if (absentStudents.length === 0) return;
 
     try {
       const activeAY = await db.query.academicYears.findFirst({
