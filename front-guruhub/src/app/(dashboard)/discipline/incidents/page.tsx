@@ -299,10 +299,11 @@ export default function DisciplineIncidentsPage() {
       { id, data: { status } },
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: disciplineKeys.all });
           toast.success(
             status === "VERIFIED"
               ? "Insiden terverifikasi dan poin demerit berhasil diakumulasikan."
-              : "Laporan insiden berhasil ditolak."
+              : "Insiden berhasil dibatalkan / ditolak. Poin demerit siswa telah diperbarui."
           );
         },
         onError: (err: any) => {
@@ -591,16 +592,41 @@ export default function DisciplineIncidentsPage() {
                           </>
                         )}
                         {isVerified && (
-                          <button
-                            onClick={() => handleOpenResolveModal(incident)}
-                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer shadow-xs"
-                          >
-                            Selesaikan
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenResolveModal(incident)}
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer shadow-xs"
+                            >
+                              Selesaikan
+                            </button>
+                            <button
+                              onClick={() => handleVerifySingle(incident.id, "REJECTED")}
+                              disabled={verifyMutation.isPending}
+                              className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 dark:text-rose-300 transition-colors cursor-pointer border border-rose-200 dark:border-rose-800 disabled:opacity-50"
+                              title="Batalkan insiden & hapus poin"
+                            >
+                              Batalkan
+                            </button>
+                          </div>
                         )}
                         {incident.status === "RESOLVED" && (
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-end gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Selesai
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5" /> Selesai
+                            </span>
+                            <button
+                              onClick={() => handleVerifySingle(incident.id, "REJECTED")}
+                              disabled={verifyMutation.isPending}
+                              className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 dark:text-rose-300 transition-colors cursor-pointer border border-rose-200 dark:border-rose-800 disabled:opacity-50"
+                              title="Batalkan insiden ini & potong poin siswa"
+                            >
+                              Batalkan Poin
+                            </button>
+                          </div>
+                        )}
+                        {incident.status === "REJECTED" && (
+                          <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center justify-end gap-1">
+                            <XCircle className="w-3.5 h-3.5" /> Dibatalkan
                           </span>
                         )}
                       </td>
