@@ -401,10 +401,21 @@ export class InterimReportCardService {
       .leftJoin(subjects, eq(interimReportCardSubjects.subjectId, subjects.id))
       .where(eq(interimReportCardSubjects.interimReportCardId, interimReportCardId));
 
+    // Auto-cleanup subjek yang tidak sesuai dengan gradeLevel kelas dari DB
+    if (rc.class?.gradeLevel) {
+      const mismatchedRowIds = subjectsDetail
+        .filter((s) => s.subject?.gradeLevel && String(s.subject.gradeLevel) !== String(rc.class.gradeLevel))
+        .map((s) => s.id);
+
+      if (mismatchedRowIds.length > 0) {
+        await db.delete(interimReportCardSubjects).where(inArray(interimReportCardSubjects.id, mismatchedRowIds));
+      }
+    }
+
     // Filter dinamis: Filter Agama & Filter Tingkat Kelas (misal hanya mapel Kelas 7 untuk Kelas 7)
     const filteredSubjects = subjectsDetail.filter((s) => {
       if (!s.subject) return true;
-      if (rc.class?.gradeLevel && s.subject.gradeLevel && s.subject.gradeLevel !== rc.class.gradeLevel) {
+      if (rc.class?.gradeLevel && s.subject.gradeLevel && String(s.subject.gradeLevel) !== String(rc.class.gradeLevel)) {
         return false; // Saring mapel yang beda tingkat kelas
       }
       if (!rc.student) return true;

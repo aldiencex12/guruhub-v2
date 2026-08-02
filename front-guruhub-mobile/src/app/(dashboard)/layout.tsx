@@ -43,6 +43,11 @@ export default function DashboardLayout({
         {children}
       </main>
 
+      {/* Fixed Footer Bar above Bottom Nav */}
+      <footer className="fixed bottom-16 left-0 right-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200/60 dark:border-gray-800/60 py-1.5 text-center text-[10px] text-gray-500 dark:text-gray-400">
+        © 2026 GuruHub Ecosystem — Developed by <span className="font-semibold text-gray-700 dark:text-gray-300">Aldi Viantara</span>
+      </footer>
+
       {/* Bottom Nav */}
       <BottomNavigation />
     </div>

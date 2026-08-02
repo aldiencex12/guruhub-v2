@@ -40,7 +40,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       const res = await authService.login(data.email, data.password);
-      
+
       // Mengatasi response mentah atau yang dibungkus oleh data envelope
       const payload = res.data || res;
       const user = payload.user;

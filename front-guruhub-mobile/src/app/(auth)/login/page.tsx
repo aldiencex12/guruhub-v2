@@ -80,7 +80,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       const res = await authService.login(data.email, data.password);
-      
+
       const payload = res.data || res;
       const user = payload.user;
       const accessToken = payload.accessToken;

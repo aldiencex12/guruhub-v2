@@ -42,6 +42,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto p-6 fade-in">
           {children}
         </main>
+        <footer className="flex-shrink-0 py-2.5 px-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-500 dark:text-gray-400 z-10">
+          © 2026 GuruHub Ecosystem — Developed by <span className="font-semibold text-gray-700 dark:text-gray-300">Aldi Viantara</span>
+        </footer>
       </div>
     </div>
   );
