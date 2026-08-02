@@ -30,31 +30,50 @@ export function calculateInterimScore(tugas1?: number | null, tugas2?: number | 
 }
 
 export function isSubjectMatchingStudentReligion(subjectName: string, subjectReligionGroup: string, studentReligion: string): boolean {
-  // 1. Jika religionGroup khusus, harus sesuai dengan studentReligion
+  const sNameLower = (subjectName || "").toLowerCase();
+  const relLower = (studentReligion || "islam").toLowerCase();
+
+  // 1. Cek apakah ini secara eksplisit merupakan mata pelajaran Agama dari nama mapelnya
+  const isAgamaByName =
+    sNameLower.includes("agama") ||
+    sNameLower.includes("kepercaya") ||
+    sNameLower.includes("pai") ||
+    sNameLower.includes("pak") ||
+    ["islam", "kristen", "katolik", "hindu", "buddha", "khonghucu"].some((r) => sNameLower.includes(r));
+
+  // Jika nama mapel BUKAN mapel Agama (misal B.Indonesia, Matematika, IPA, IPS, B.Inggris, dll.),
+  // maka mapel ini BERLAKU UNTUK SEMUA SISWA tanpa terpengaruh kesalahan kategori agama di master data.
+  if (!isAgamaByName) {
+    return true;
+  }
+
+  // 2. Jika memang mapel Agama, cek religionGroup jika ada
   if (subjectReligionGroup && subjectReligionGroup !== "UMUM") {
-    return subjectReligionGroup.toLowerCase() === studentReligion.toLowerCase();
+    return subjectReligionGroup.toLowerCase() === relLower;
   }
 
-  // 2. Deteksi otomatis dari nama mata pelajaran jika religionGroup bertipe UMUM
-  const sNameLower = subjectName.toLowerCase();
-  const relLower = studentReligion.toLowerCase();
-
-  const isAgamaSubject = sNameLower.includes("agama") || sNameLower.includes("kepercaya");
-  if (!isAgamaSubject) {
-    return true; // Mapel non-agama -> Berlaku untuk semua siswa
-  }
-
-  // Jika mapel agama, cek apakah nama mapel mengandung sebutan agama lain
+  // 3. Deteksi agama spesifik dari kata di nama mapel
   const religions = ["islam", "kristen", "katolik", "hindu", "buddha", "khonghucu"];
   for (const rel of religions) {
     if (sNameLower.includes(rel)) {
-      // Mapel spesifik agama tertentu
       return rel === relLower;
     }
   }
 
-  // Jika nama mapel hanya "Pendidikan Agama" tanpa spesifikasi, tampilkan default
   return true;
+}
+
+export function normalizeSubjectKey(name: string): string {
+  let norm = (name || "").toLowerCase().trim();
+  norm = norm.replace(/-(7|8|9|10|11|12)$/, "");
+  norm = norm.replace(/\s+(7|8|9|10|11|12)$/, "");
+  if (norm === "bahasa indonesia" || norm === "b.indonesia" || norm === "b indonesia") return "b.indonesia";
+  if (norm === "bahasa inggris" || norm === "b.inggris" || norm === "b inggris") return "b.inggris";
+  if (norm === "ppkn" || norm === "pancasila" || norm === "ppkn / pancasila") return "pancasila";
+  if (norm === "seni budaya" || norm === "seni rupa" || norm === "seni") return "seni rupa";
+  if (norm.includes("pendidikan agama islam") || norm === "pai") return "pai";
+  if (norm.includes("pendidikan agama kristen") || norm === "pak") return "pak";
+  return norm;
 }
 
 export class InterimReportCardService {
@@ -147,8 +166,8 @@ export class InterimReportCardService {
     });
     const interimReportCardId = inserted.insertId;
 
-    // 6. Ambil semua mata pelajaran yang SESUAI TINGKAT KELAS ini (misal Kelas 7)
-    const subjectConditions = [eq(subjects.schoolId, schoolId), isNull(subjects.deletedAt)];
+    // 6. Ambil semua mata pelajaran AKTIF yang SESUAI TINGKAT KELAS ini (misal Kelas 7)
+    const subjectConditions = [eq(subjects.schoolId, schoolId), eq(subjects.status, "Aktif"), isNull(subjects.deletedAt)];
     if (classObj?.gradeLevel) {
       subjectConditions.push(eq(subjects.gradeLevel, classObj.gradeLevel));
     }
@@ -157,6 +176,7 @@ export class InterimReportCardService {
       .select({
         id: subjects.id,
         name: subjects.name,
+        code: subjects.code,
         religionGroup: subjects.religionGroup,
         gradeLevel: subjects.gradeLevel,
       })
@@ -230,6 +250,7 @@ export class InterimReportCardService {
       .select({
         id: subjects.id,
         name: subjects.name,
+        code: subjects.code,
         religionGroup: subjects.religionGroup,
         gradeLevel: subjects.gradeLevel,
       })
@@ -237,6 +258,7 @@ export class InterimReportCardService {
       .where(
         and(
           eq(subjects.schoolId, schoolId),
+          eq(subjects.status, "Aktif"),
           eq(subjects.gradeLevel, classGradeLevel as any),
           isNull(subjects.deletedAt)
         )
@@ -401,26 +423,64 @@ export class InterimReportCardService {
       .leftJoin(subjects, eq(interimReportCardSubjects.subjectId, subjects.id))
       .where(eq(interimReportCardSubjects.interimReportCardId, interimReportCardId));
 
-    // Auto-cleanup subjek yang tidak sesuai dengan gradeLevel kelas dari DB
-    if (rc.class?.gradeLevel) {
-      const mismatchedRowIds = subjectsDetail
-        .filter((s) => s.subject?.gradeLevel && String(s.subject.gradeLevel) !== String(rc.class.gradeLevel))
+    // Auto-cleanup DB: Hapus otomatis subjek yang beda gradeLevel, beda Agama, atau Duplikat Nama
+    if (rc.class?.gradeLevel && rc.student?.religion) {
+      const validSubjects = subjectsDetail.filter((s) => {
+        if (!s.subject) return false;
+        if (s.subject.gradeLevel && String(s.subject.gradeLevel) !== String(rc.class.gradeLevel)) {
+          return false;
+        }
+        return isSubjectMatchingStudentReligion(s.subject.name, s.subject.religionGroup, rc.student.religion);
+      });
+
+      // Deduplikasi nama mapel: Hanya simpan 1 mapel per nama yang di-normalisasi (utamakan kode MP...)
+      const keptIds = new Set<number>();
+      const normMap = new Map<string, any>();
+
+      for (const s of validSubjects) {
+        if (!s.subject) continue;
+        const key = normalizeSubjectKey(s.subject.name);
+        const existing = normMap.get(key);
+        if (!existing) {
+          normMap.set(key, s);
+        } else {
+          const sIsMP = s.subject.code?.startsWith("MP");
+          const existingIsMP = existing.subject?.code?.startsWith("MP");
+          if (sIsMP && !existingIsMP) {
+            normMap.set(key, s);
+          }
+        }
+      }
+
+      for (const s of normMap.values()) {
+        keptIds.add(s.id);
+      }
+
+      const rowIdsToDelete = subjectsDetail
+        .filter((s) => !keptIds.has(s.id))
         .map((s) => s.id);
 
-      if (mismatchedRowIds.length > 0) {
-        await db.delete(interimReportCardSubjects).where(inArray(interimReportCardSubjects.id, mismatchedRowIds));
+      if (rowIdsToDelete.length > 0) {
+        await db.delete(interimReportCardSubjects).where(inArray(interimReportCardSubjects.id, rowIdsToDelete));
       }
     }
 
-    // Filter dinamis: Filter Agama & Filter Tingkat Kelas (misal hanya mapel Kelas 7 untuk Kelas 7)
-    const filteredSubjects = subjectsDetail.filter((s) => {
-      if (!s.subject) return true;
-      if (rc.class?.gradeLevel && s.subject.gradeLevel && String(s.subject.gradeLevel) !== String(rc.class.gradeLevel)) {
-        return false; // Saring mapel yang beda tingkat kelas
-      }
-      if (!rc.student) return true;
-      return isSubjectMatchingStudentReligion(s.subject.name, s.subject.religionGroup, rc.student.religion);
-    });
+    // Ambil ulang data subjek terbersih setelah cleanup
+    const cleanSubjectsDetail = await db
+      .select({
+        id: interimReportCardSubjects.id,
+        subjectId: interimReportCardSubjects.subjectId,
+        tugas1: interimReportCardSubjects.tugas1,
+        tugas2: interimReportCardSubjects.tugas2,
+        sts: interimReportCardSubjects.sts,
+        finalScore: interimReportCardSubjects.finalScore,
+        gradeLetter: interimReportCardSubjects.gradeLetter,
+        notes: interimReportCardSubjects.notes,
+        subject: { id: subjects.id, name: subjects.name, code: subjects.code, religionGroup: subjects.religionGroup, gradeLevel: subjects.gradeLevel }
+      })
+      .from(interimReportCardSubjects)
+      .leftJoin(subjects, eq(interimReportCardSubjects.subjectId, subjects.id))
+      .where(eq(interimReportCardSubjects.interimReportCardId, interimReportCardId));
 
     return {
       ...rc,
@@ -428,7 +488,7 @@ export class InterimReportCardService {
         ...rc.class,
         homeroomTeacher: rc.homeroomTeacherName ? { id: rc.homeroomTeacherId, name: rc.homeroomTeacherName } : null
       } : null,
-      subjects: filteredSubjects,
+      subjects: cleanSubjectsDetail,
     };
   }
 
