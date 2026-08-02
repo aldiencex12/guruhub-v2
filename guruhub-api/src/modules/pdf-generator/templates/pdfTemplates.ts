@@ -973,7 +973,7 @@ export function renderKopSuratHtml(school: SchoolKopData): string {
 }
 
 
-export function generateInterimReportCardHtml(data: {
+export function generateInterimReportCardInnerHtml(data: {
   school: SchoolKopData;
   student: { name: string; nisn: string; className: string; religion: string; studentNo?: string | number };
   academicYear: { year: string; semester: string };
