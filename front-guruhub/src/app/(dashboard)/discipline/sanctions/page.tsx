@@ -81,6 +81,7 @@ export default function DisciplineSanctionsPage() {
     if (!rawStudentIncidents.length) return [];
     return rawStudentIncidents.filter((inc: any) => {
       if (inc.deletedAt) return false;
+      if (inc.status === "REJECTED" || inc.status === "CANCELLED" || inc.status === "DRAFT") return false;
       if (!inc.incidentDate) return true;
       const m = new Date(inc.incidentDate).getMonth() + 1; // 1-12
       if (selectedSemester === "Ganjil") {
