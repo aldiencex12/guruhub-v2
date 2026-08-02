@@ -315,8 +315,13 @@ export default function DisciplineSanctionsPage() {
   // State Modal Threshold
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingThreshold, setEditingThreshold] = useState<ThresholdItem | null>(null);
-  const [formData, setFormData] = useState({
-    minPoints: 25,
+  const [formData, setFormData] = useState<{
+    minPoints: number | string;
+    label: string;
+    actionRequired: string;
+    description: string;
+  }>({
+    minPoints: "",
     label: "",
     actionRequired: "PEMBINAAN_BK",
     description: "",
@@ -363,7 +368,7 @@ export default function DisciplineSanctionsPage() {
   const openCreateModal = () => {
     setEditingThreshold(null);
     setFormData({
-      minPoints: 25,
+      minPoints: "",
       label: "",
       actionRequired: "PEMBINAAN_BK",
       description: "",
@@ -729,9 +734,9 @@ export default function DisciplineSanctionsPage() {
                   required
                   min={1}
                   max={999}
-                  placeholder="25"
+                  placeholder="Contoh: 25"
                   value={formData.minPoints}
-                  onChange={(e) => setFormData({ ...formData, minPoints: Number(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, minPoints: e.target.value === "" ? "" : Number(e.target.value) })}
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-foreground"
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
