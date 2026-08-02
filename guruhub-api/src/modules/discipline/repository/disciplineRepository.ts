@@ -15,6 +15,7 @@ import { users } from "../../../schema/users";
 import { teachers } from "../../../schema/teachers";
 import { students } from "../../../schema/students";
 import { classes } from "../../../schema/classes";
+import { classMembers } from "../../../schema/classMembers";
 import { and, eq, or, like, isNull, sql, gte, lte, desc } from "drizzle-orm";
 
 // Tipe spesifik untuk transaksi Drizzle ORM
@@ -442,6 +443,7 @@ export class DisciplineRepository {
       deletedAt: disciplineSanctionLogs.deletedAt,
       studentName: students.name,
       studentNisn: students.nisn,
+      className: classes.name,
       activePoints: sql<number>`(
         SELECT COALESCE(SUM(dis2.point_snapshot), 0)
         FROM discipline_incident_students dis2
@@ -454,6 +456,8 @@ export class DisciplineRepository {
     })
     .from(disciplineSanctionLogs)
     .leftJoin(students, eq(disciplineSanctionLogs.studentId, students.id))
+    .leftJoin(classMembers, and(eq(students.id, classMembers.studentId), isNull(classMembers.deletedAt)))
+    .leftJoin(classes, eq(classMembers.classId, classes.id))
     .where(whereClause);
 
     const [data, countResult] = await Promise.all([
