@@ -911,7 +911,7 @@ export function generateSanctionReportHtml(data: {
             <p style="font-weight: bold; color: #000000; margin: 0;">Guru BK / Pembina Disiplin,</p>
             <div style="height: 64px;"></div>
             <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
-            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">NIP / NUPTK</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
           </td>
 
           <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
@@ -921,7 +921,6 @@ export function generateSanctionReportHtml(data: {
             <p style="font-weight: bold; color: #000000; margin: 0;">Kepala Sekolah,</p>
             <div style="height: 64px;"></div>
             <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">${data.school.principalName || "HERWINDA ROSITA, SE"}</p>
-            ${data.school.principalNip ? `<p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">NIP. ${data.school.principalNip}</p>` : ""}
           </td>
         </tr>
       </tbody>
@@ -1156,7 +1155,6 @@ export function generateInterimReportCardInnerHtml(data: {
               <div>Kepala Sekolah</div>
               <div style="height: 55px;"></div>
               <div><b><u>${principalName}</u></b></div>
-              ${data.school.principalNip ? `<div style="font-size: 9pt;">NIP. ${data.school.principalNip}</div>` : ''}
             </td>
           </tr>
         </table>
