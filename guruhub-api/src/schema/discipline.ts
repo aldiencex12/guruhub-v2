@@ -199,7 +199,7 @@ export const disciplineSanctionThresholds = mysqlTable("discipline_sanction_thre
   schoolId: bigint("school_id", { mode: "number", unsigned: true }).notNull(),
   minPoints: int("min_points").notNull(),
   sanctionName: varchar("sanction_name", { length: 255 }).notNull(),
-  actionRequired: mysqlEnum("action_required", ["PEMBINAAN_BK", "PANGGILAN_ORANG_TUA", "SURAT_PERINGATAN", "SKORSING", "DIKELUARKAN"]).notNull(),
+  actionRequired: varchar("action_required", { length: 100 }).notNull(),
   description: text("description"),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),

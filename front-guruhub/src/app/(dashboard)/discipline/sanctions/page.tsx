@@ -40,6 +40,7 @@ interface ThresholdItem {
   id: number;
   minPoints: number;
   label?: string;
+  sanctionName?: string;
   actionRequired: string;
   description?: string;
 }
@@ -374,7 +375,7 @@ export default function DisciplineSanctionsPage() {
     setEditingThreshold(item);
     setFormData({
       minPoints: item.minPoints,
-      label: item.label || "",
+      label: item.sanctionName || item.label || "",
       actionRequired: item.actionRequired || "PEMBINAAN_BK",
       description: item.description || "",
     });
@@ -459,7 +460,7 @@ export default function DisciplineSanctionsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider">
-                      {t.label || `Ambang ${idx + 1} (${t.actionRequired})`}
+                      {t.sanctionName || t.label || `Ambang ${idx + 1} (${t.actionRequired})`}
                     </span>
                     <span className="font-extrabold text-base">
                       {t.minPoints} Poin
@@ -742,14 +743,21 @@ export default function DisciplineSanctionsPage() {
                 <label className="block text-xs font-semibold text-muted-foreground mb-1">
                   Tindakan Sanksi / Tindak Lanjut <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  placeholder="Contoh: PEMBINAAN_BK, PANGGILAN_ORANG_TUA, SKORSING"
                   value={formData.actionRequired}
                   onChange={(e) => setFormData({ ...formData, actionRequired: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-foreground"
-                />
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-foreground cursor-pointer"
+                >
+                  <option value="PEMBINAAN_BK">PEMBINAAN_BK — Konseling & Pembinaan Guru BK</option>
+                  <option value="PANGGILAN_ORANG_TUA">PANGGILAN_ORANG_TUA — Pemanggilan Orang Tua / Wali</option>
+                  <option value="SURAT_PERINGATAN">SURAT_PERINGATAN — Penerbitan Surat Peringatan (SP)</option>
+                  <option value="SKORSING">SKORSING — Skorsing Pembinaan Sementara</option>
+                  <option value="DIKELUARKAN">DIKELUARKAN — Dikembalikan ke Orang Tua / Dikeluarkan</option>
+                  {!["PEMBINAAN_BK", "PANGGILAN_ORANG_TUA", "SURAT_PERINGATAN", "SKORSING", "DIKELUARKAN"].includes(formData.actionRequired) && (
+                    <option value={formData.actionRequired}>{formData.actionRequired}</option>
+                  )}
+                </select>
               </div>
 
               <div>
