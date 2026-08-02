@@ -674,15 +674,18 @@ export class PdfGeneratorService {
         and(
           eq(disciplineIncidentStudents.studentId, student.id),
           eq(disciplineIncidentStudents.academicYearId, sanctionData.academicYearId),
-          eq(disciplineIncidents.schoolId, schoolId)
+          eq(disciplineIncidents.schoolId, schoolId),
+          isNull(disciplineIncidents.deletedAt)
         )
       )
       .orderBy(desc(disciplineIncidents.incidentDate));
 
-    // Calculate sum for current academic year (matching sanction's year)
+    // Calculate sum for current academic year (matching sanction's year) - ONLY count active (VERIFIED/RESOLVED) points!
     let semesterPointsSum = 0;
     studentIncidents.forEach(inc => {
-      semesterPointsSum += inc.demeritPoints || 0;
+      if (inc.status === "VERIFIED" || inc.status === "RESOLVED") {
+        semesterPointsSum += inc.demeritPoints || 0;
+      }
     });
 
     const ayData = await db.query.academicYears.findFirst({
@@ -702,7 +705,7 @@ export class PdfGeneratorService {
       sanction: {
         id: sanctionData.id,
         sanctionType: sanctionData.sanctionType,
-        cumulativePoints: sanctionData.cumulativePoints,
+        cumulativePoints: semesterPointsSum,
         issuedDate: new Date(sanctionData.createdAt || Date.now()).toLocaleDateString("id-ID"),
         notes: sanctionData.notes || undefined
       },

@@ -79,6 +79,7 @@ export default function DisciplineSanctionsPage() {
   const filteredStudentIncidents = useMemo(() => {
     if (!rawStudentIncidents.length) return [];
     return rawStudentIncidents.filter((inc: any) => {
+      if (inc.deletedAt) return false;
       if (!inc.incidentDate) return true;
       const m = new Date(inc.incidentDate).getMonth() + 1; // 1-12
       if (selectedSemester === "Ganjil") {
@@ -91,7 +92,12 @@ export default function DisciplineSanctionsPage() {
   }, [rawStudentIncidents, selectedSemester]);
 
   const semesterPointsSum = useMemo(() => {
-    return filteredStudentIncidents.reduce((sum: number, item: any) => sum + Number(item.demeritPoints || 5), 0);
+    return filteredStudentIncidents.reduce((sum: number, item: any) => {
+      if (item.status === "VERIFIED" || item.status === "RESOLVED") {
+        return sum + Number(item.demeritPoints || item.pointSnapshot || 0);
+      }
+      return sum;
+    }, 0);
   }, [filteredStudentIncidents]);
 
   // Direct PDF Download Handler
@@ -1119,7 +1125,7 @@ export default function DisciplineSanctionsPage() {
                   <div className="py-2.5 px-3.5 mb-6">
                     <div className="flex items-center justify-between font-bold text-black border-b border-black pb-1 mb-1">
                       <span>TOTAL AKUMULASI POIN KEDISIPLINAN KESELURUHAN:</span>
-                      <span className="text-sm text-black font-extrabold">{printSanction.cumulativePoints || 0} POIN</span>
+                      <span className="text-sm text-black font-extrabold">{semesterPointsSum} POIN</span>
                     </div>
                     <p className="text-[11px] text-black leading-relaxed">
                       <strong>Catatan Pembinaan Tim BK:</strong> Siswa yang bersangkutan telah menembus batas ambang poin 

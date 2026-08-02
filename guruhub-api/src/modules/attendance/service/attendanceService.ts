@@ -568,7 +568,7 @@ export class AttendanceService {
               eq(disciplineIncidents.schoolId, schoolId),
               eq(disciplineIncidentStudents.studentId, st.studentId),
               eq(disciplineIncidentStudents.disciplineTypeId, alphaType.id),
-              sql`DATE(${disciplineIncidents.incidentDate}) = ${attendanceDate}`,
+              sql`(DATE(${disciplineIncidents.incidentDate}) = ${attendanceDate} OR ${disciplineIncidents.description} LIKE ${`%${attendanceDate}%`})`,
               isNull(disciplineIncidents.deletedAt)
             )
           );
