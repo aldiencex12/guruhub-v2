@@ -197,6 +197,30 @@ export default function InterimReportCardsPage() {
     }
   };
 
+  const [isPrintingBulk, setIsPrintingBulk] = useState(false);
+
+  const handlePrintClassBulkPdf = async () => {
+    if (!selectedClassId || !selectedAcademicYearId) {
+      toast.error("Pilih kelas dan tahun ajaran terlebih dahulu.");
+      return;
+    }
+    if (reports.length === 0) {
+      toast.error("Tidak ada data siswa pada kelas ini.");
+      return;
+    }
+    setIsPrintingBulk(true);
+    try {
+      await api.openBlob(
+        `/pdf/interim-report-card/class/${selectedClassId}?academicYearId=${selectedAcademicYearId}&semester=${selectedSemester}`
+      );
+      toast.success("PDF Massal berhasil dibuka/diunduh!");
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal mencetak PDF Raport Sisipan Kelas");
+    } finally {
+      setIsPrintingBulk(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -208,9 +232,18 @@ export default function InterimReportCardsPage() {
             Penilaian Sisipan berbasis 3 komponen (2 Tugas + 1 STS) dengan penyaringan 5 Agama otomatis.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={loadReports} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handlePrintClassBulkPdf}
+            disabled={isPrintingBulk || isLoading || reports.length === 0}
+            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrintingBulk ? "Memproses PDF..." : "Cetak PDF Masal"}
           </Button>
           <Button onClick={handleOpenInputModal} className="bg-indigo-600 hover:bg-indigo-700">
             <Plus className="h-4 w-4 mr-2" /> Input Nilai Sisipan
