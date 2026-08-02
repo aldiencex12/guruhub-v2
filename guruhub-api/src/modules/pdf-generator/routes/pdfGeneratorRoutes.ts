@@ -106,5 +106,22 @@ export const pdfGeneratorRoutes = new Elysia({ prefix: "/pdf" })
     );
   }, {
     beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher"])
+  })
+  // Raport Sisipan Massal per Kelas: Teacher, HomeroomTeacher, Principal, SchoolAdmin, SuperAdmin
+  .get("/interim-report-card/class/:classId", ({ params: { classId }, query: { academicYearId, semester }, headers, user }) => {
+    return controller.exportClassInterimReportCards(
+      Number(classId),
+      Number(academicYearId),
+      semester as "GANJIL" | "GENAP",
+      Number(headers["x-school-id"]),
+      user.id,
+      user.role
+    );
+  }, {
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher"]),
+    query: t.Object({
+      academicYearId: t.String(),
+      semester: t.String()
+    })
   });
 

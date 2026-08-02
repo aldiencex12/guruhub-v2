@@ -1030,14 +1030,7 @@ export function generateInterimReportCardHtml(data: {
   const displayAvgT2 = countT2 > 0 ? (sumT2 / countT2).toFixed(2).replace(/\.00$/, "") : "-";
   const displayAvgSTS = countSTS > 0 ? (sumSTS / countSTS).toFixed(2).replace(/\.00$/, "") : "-";
 
-  return `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <title>Raport Sisipan - ${data.student.name}</title>
-  <style>${commonStyle}</style>
-</head>
-<body style="margin: 0; padding: 0; background: #ffffff;">
+  return `
   <div class="report-page" style="width: 210mm; min-height: 330mm; padding: 12mm 15mm 15mm 15mm; margin: 0 auto; box-sizing: border-box; background: #ffffff;">
     ${renderKopSuratHtml(data.school)}
 
@@ -1169,7 +1162,37 @@ export function generateInterimReportCardHtml(data: {
         </table>
       </div>`;
     })()}
-  </div>
+  </div>`;
+}
+
+export function generateInterimReportCardHtml(data: any): string {
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Raport Sisipan - ${data.student.name}</title>
+  <style>${commonStyle}</style>
+</head>
+<body style="margin: 0; padding: 0; background: #ffffff;">
+  ${generateInterimReportCardInnerHtml(data)}
+</body>
+</html>`;
+}
+
+export function generateClassInterimReportCardHtml(reportsData: any[]): string {
+  const pagesHtml = reportsData.map(data => generateInterimReportCardInnerHtml(data));
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Raport Sisipan Kelas</title>
+  <style>
+    ${commonStyle}
+    .page-break { page-break-before: always; break-before: page; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background: #ffffff;">
+  ${pagesHtml.join('<div class="page-break"></div>')}
 </body>
 </html>`;
 }

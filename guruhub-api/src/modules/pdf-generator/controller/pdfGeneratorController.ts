@@ -166,5 +166,29 @@ export class PdfGeneratorController {
       return this.handleError(err);
     }
   }
+
+  /**
+   * 9. Export PDF Massal Raport Sisipan per Kelas
+   */
+  async exportClassInterimReportCards(
+    classId: number,
+    academicYearId: number,
+    semester: "GANJIL" | "GENAP",
+    schoolId: number,
+    userId: number,
+    role: string
+  ) {
+    try {
+      const buffer = await this.pdfService.generateClassInterimReportCardPdf(schoolId, classId, academicYearId, semester, userId, role);
+      return new Response(buffer, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="raport-sisipan-kelas-${classId}.pdf"`
+        }
+      });
+    } catch (err: any) {
+      return this.handleError(err);
+    }
+  }
 }
 

@@ -24,7 +24,8 @@ import {
   generateStudentListHtml,
   generateTeacherListHtml,
   generateSanctionReportHtml,
-  generateInterimReportCardHtml
+  generateInterimReportCardHtml,
+  generateClassInterimReportCardHtml
 } from "../templates/pdfTemplates";
 
 export class PdfGeneratorService {
@@ -782,6 +783,92 @@ export class PdfGeneratorService {
     });
 
     return this.renderHtmlToPdf(html);
+  }
+
+  /**
+   * 9. Export PDF Massal Raport Sisipan per Kelas
+   */
+  async generateClassInterimReportCardPdf(
+    schoolId: number,
+    classId: number,
+    academicYearId: number,
+    semester: "GANJIL" | "GENAP",
+    userId: number,
+    role: string
+  ): Promise<Buffer> {
+    if (role === "Student") {
+      throw new Error("403: Forbidden");
+    }
+
+    const interimService = new InterimReportCardService();
+    const reports = await interimService.getClassInterimReportCards(schoolId, classId, { academicYearId, semester });
+    if (reports.length === 0) {
+      throw new Error("404: Tidak ada data Raport Sisipan untuk kelas ini");
+    }
+
+    const schoolData = await db.select().from(schools).where(eq(schools.id, schoolId)).limit(1);
+    const school = schoolData[0];
+    if (!school) throw new Error("404: School metadata not found");
+
+    // Ambil nomor absen kelas
+    const classRoll = await db
+      .select({ studentId: classMembers.studentId })
+      .from(classMembers)
+      .where(
+        and(
+          eq(classMembers.classId, classId),
+          eq(classMembers.academicYearId, academicYearId),
+          eq(classMembers.status, "ACTIVE")
+        )
+      )
+      .orderBy(asc(classMembers.studentId));
+
+    const rollMap = new Map<number, number>();
+    classRoll.forEach((r, idx) => rollMap.set(r.studentId, idx + 1));
+
+    // Urutkan siswa berdasarkan nama
+    reports.sort((a, b) => (a.student?.name || "").localeCompare(b.student?.name || ""));
+
+    const printDate = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+    const formattedSchool = this.formatSchoolData(school);
+
+    const reportsData = reports.map((details) => {
+      const studentNo = rollMap.get(details.studentId);
+      return {
+        school: formattedSchool,
+        student: {
+          name: details.student?.name || "-",
+          nisn: details.student?.nisn || "-",
+          className: details.class?.name || "-",
+          religion: details.student?.religion || "Islam",
+          studentNo
+        },
+        academicYear: {
+          year: details.academicYear?.year || "-",
+          semester: details.semester
+        },
+        subjects: (details.subjects || []).map((s: any) => ({
+          name: s.subject?.name || "-",
+          tugas1: s.tugas1,
+          tugas2: s.tugas2,
+          sts: s.sts,
+          finalScore: s.finalScore,
+          gradeLetter: s.gradeLetter || "-",
+          notes: s.notes || ""
+        })),
+        attendance: {
+          sick: details.sick || 0,
+          permission: details.permission || 0,
+          absent: details.absent || 0
+        },
+        homeroomTeacherNotes: details.homeroomTeacherNotes || "",
+        homeroomTeacherName: details.class?.homeroomTeacher?.name,
+        printDate
+      };
+    });
+
+    const combinedHtml = generateClassInterimReportCardHtml(reportsData);
+    return this.renderHtmlToPdf(combinedHtml);
   }
 }
 
