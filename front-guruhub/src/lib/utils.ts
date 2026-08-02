@@ -16,6 +16,21 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+// Get today's date formatted as YYYY-MM-DD in local timezone
+export function getTodayDateInput(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Get today's month formatted as YYYY-MM in local timezone
+export function getTodayMonthInput(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
 // Format time HH:MM
 export function formatTime(timeStr: string): string {
   if (!timeStr) return "-";

@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/core/EmptyState";
 import { ErrorState } from "@/components/core/ErrorState";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatStatus, formatPoints, formatDate } from "@/lib/discipline.utils";
+import { getTodayDateInput } from "@/lib/utils";
 import {
   ShieldAlert,
   Filter,
@@ -57,7 +58,7 @@ export default function DisciplineIncidentsPage() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Form State for New Incident
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getTodayDateInput();
   const [selectedClassId, setSelectedClassId] = useState<number>(0);
   const [selectedStudentId, setSelectedStudentId] = useState<number>(0);
   const [selectedStudentClassMemberId, setSelectedStudentClassMemberId] = useState<number>(0);

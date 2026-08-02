@@ -22,7 +22,7 @@ import { useTeachers } from "@/queries/teachers.query";
 import { useAcademicYears } from "@/queries/dashboard.query";
 import { useClassMembers } from "@/queries/class-members.query";
 import type { Assessment, AssessmentType } from "@/types";
-import { getAssessmentTypeLabel, formatDate } from "@/lib/utils";
+import { getAssessmentTypeLabel, formatDate, getTodayDateInput } from "@/lib/utils";
 
 const ASSESSMENT_TYPES: AssessmentType[] = ["DAILY_TEST", "ASSIGNMENT", "PROJECT", "PRACTICAL", "MIDTERM", "FINAL"];
 
@@ -218,7 +218,7 @@ export default function AssessmentsPage() {
         academicYearId: academicYears.find(ay => ay.isActive)?.id || academicYears[0]?.id || 0,
         categoryId: categories[0].id,
         assessmentType: "DAILY_TEST",
-        assessmentDate: new Date().toISOString().split("T")[0],
+        assessmentDate: getTodayDateInput(),
         maxScore: 100,
       });
     }
@@ -233,7 +233,7 @@ export default function AssessmentsPage() {
       academicYearId: academicYears.find(ay => ay.isActive)?.id || academicYears[0]?.id || 0,
       categoryId: categories[0]?.id || 0,
       assessmentType: "DAILY_TEST",
-      assessmentDate: new Date().toISOString().split("T")[0],
+      assessmentDate: getTodayDateInput(),
       maxScore: 100,
     });
     setDialogOpen(true);

@@ -21,7 +21,7 @@ import { useSchedules } from "@/queries/schedules.query";
 import { useClasses } from "@/queries/classes.query";
 import { useSubjects } from "@/queries/subjects.query";
 import type { TeachingJournal } from "@/types";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -55,8 +55,8 @@ export default function TeachingJournalsPage() {
 
   // Recap Filters
   const [recapClassId, setRecapClassId] = useState<string>("");
-  const [recapDate, setRecapDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [recapMonth, setRecapMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [recapDate, setRecapDate] = useState<string>(getTodayDateInput());
+  const [recapMonth, setRecapMonth] = useState<string>(getTodayMonthInput());
 
   // Detail Modal
   const [detailOpen, setDetailOpen] = useState(false);
@@ -90,7 +90,7 @@ export default function TeachingJournalsPage() {
     if (schedules.length > 0) {
       reset({
         scheduleId: schedules[0].id,
-        journalDate: new Date().toISOString().split("T")[0],
+        journalDate: getTodayDateInput(),
         topic: "",
         learningObjectives: "",
         teachingMethod: "Ceramah",
@@ -111,7 +111,7 @@ export default function TeachingJournalsPage() {
     setEditing(null);
     reset({
       scheduleId: schedules[0]?.id || 0,
-      journalDate: new Date().toISOString().split("T")[0],
+      journalDate: getTodayDateInput(),
       topic: "",
       learningObjectives: "",
       teachingMethod: "",

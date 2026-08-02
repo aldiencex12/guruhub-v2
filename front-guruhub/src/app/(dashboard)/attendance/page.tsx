@@ -20,7 +20,7 @@ import { useSubjects } from "@/queries/subjects.query";
 import { useTeachers } from "@/queries/teachers.query";
 import { useAuthStore } from "@/store/auth.store";
 import type { Attendance, AttendanceStatus, ClassMember } from "@/types";
-import { getAttendanceColor, getAttendanceLabel, formatDate, formatTime } from "@/lib/utils";
+import { getAttendanceColor, getAttendanceLabel, formatDate, formatTime, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { attendanceService } from "@/services/attendance";
 
@@ -59,14 +59,14 @@ export default function AttendancePage() {
 
   // Form state
   const [scheduleId, setScheduleId] = useState<string>("");
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>(getTodayDateInput());
   const [notes, setNotes] = useState("");
   const [details, setDetails] = useState<Record<number, { status: AttendanceStatus; notes: string }>>({});
 
   // Recap Filter states
   const [recapClassId, setRecapClassId] = useState<string>("");
-  const [recapDate, setRecapDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [recapMonth, setRecapMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [recapDate, setRecapDate] = useState<string>(getTodayDateInput());
+  const [recapMonth, setRecapMonth] = useState<string>(getTodayMonthInput());
 
   // Sync default scheduleId when schedules load
   useEffect(() => {

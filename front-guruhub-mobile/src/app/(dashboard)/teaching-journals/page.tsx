@@ -12,7 +12,7 @@ import type { TeachingJournal, Schedule, Class, Subject } from "@/types";
 import { BookOpen, Plus, Calendar, ArrowLeft, Check, Info, Trash2, Edit2, Printer, FileText, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 import { PrintHeader } from "@/components/PrintHeader";
-import { cn, formatDate, formatTime } from "@/lib/utils";
+import { cn, formatDate, formatTime, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 
 export default function MobileTeachingJournalsPage() {
   const searchParams = useSearchParams();
@@ -76,7 +76,7 @@ export default function MobileTeachingJournalsPage() {
 
   // Form states
   const [scheduleId, setScheduleId] = useState<string>("");
-  const [journalDate, setJournalDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [journalDate, setJournalDate] = useState<string>(getTodayDateInput());
   const [topic, setTopic] = useState("");
   const [learningObjectives, setLearningObjectives] = useState("");
   const [teachingMethod, setTeachingMethod] = useState("Ceramah");
@@ -86,8 +86,8 @@ export default function MobileTeachingJournalsPage() {
 
   // Recap Filter states
   const [recapClassId, setRecapClassId] = useState<string>("");
-  const [recapDate, setRecapDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [recapMonth, setRecapMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [recapDate, setRecapDate] = useState<string>(getTodayDateInput());
+  const [recapMonth, setRecapMonth] = useState<string>(getTodayMonthInput());
 
   useEffect(() => {
     if (classes.length > 0 && !recapClassId) {

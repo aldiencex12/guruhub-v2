@@ -9,7 +9,7 @@ import { api } from "@/services/api";
 import { ShieldAlert, AlertTriangle, FileWarning, CheckCircle2, Clock, Filter, RefreshCw, ChevronDown, ChevronUp, Users, Calendar, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { showAlert } from "@/utils/alert";
-import { cn } from "@/lib/utils";
+import { cn, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 import { SearchableSelectModal, SelectTriggerButton } from "@/components/SearchableSelectModal";
 
 type Tab = "polsis" | "incidents" | "sanctions" | "recap" | "analytics";
@@ -58,7 +58,7 @@ export default function BKDisciplinePage() {
   const [polsisStudentId, setPolsisStudentId] = useState("");
   const [polsisTypeId, setPolsisTypeId] = useState("");
   const [polsisLocation, setPolsisLocation] = useState("");
-  const [polsisDate, setPolsisDate] = useState(new Date().toISOString().slice(0, 10));
+  const [polsisDate, setPolsisDate] = useState(getTodayDateInput());
   const [polsisNotes, setPolsisNotes] = useState("");
   const [polsisStudents, setPolsisStudents] = useState<any[]>([]);
   const [disciplineTypesList, setDisciplineTypesList] = useState<any[]>([]);
@@ -176,7 +176,7 @@ export default function BKDisciplinePage() {
 
   const [recapData, setRecapData] = useState<any>(null);
   const [recapLoading, setRecapLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState(getTodayMonthInput());
 
   const loadRecapData = async () => {
     if (!filterClassId && classes.length > 0) {

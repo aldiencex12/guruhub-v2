@@ -37,7 +37,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn, formatDate, getAssessmentTypeLabel } from "@/lib/utils";
+import { cn, formatDate, getAssessmentTypeLabel, getTodayDateInput } from "@/lib/utils";
 
 const ASSESSMENT_TYPES: { value: AssessmentType; label: string }[] = [
   { value: "DAILY_TEST", label: "Ulangan Harian" },
@@ -113,7 +113,7 @@ export default function MobileAssessmentsPage() {
   const [formAcademicYearId, setFormAcademicYearId] = useState("");
   const [formCategoryId, setFormCategoryId] = useState("");
   const [formAssessmentType, setFormAssessmentType] = useState<AssessmentType>("DAILY_TEST");
-  const [formAssessmentDate, setFormAssessmentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formAssessmentDate, setFormAssessmentDate] = useState(getTodayDateInput());
   const [formMaxScore, setFormMaxScore] = useState<number>(100);
   const [submittingForm, setSubmittingForm] = useState(false);
 
@@ -199,7 +199,7 @@ export default function MobileAssessmentsPage() {
     setView("create");
     setFormTitle("");
     setFormAssessmentType("DAILY_TEST");
-    setFormAssessmentDate(new Date().toISOString().split("T")[0]);
+    setFormAssessmentDate(getTodayDateInput());
     setFormMaxScore(100);
     if (classes.length > 0) setFormClassId(String(classes[0].id));
     if (subjects.length > 0) setFormSubjectId(String(subjects[0].id));

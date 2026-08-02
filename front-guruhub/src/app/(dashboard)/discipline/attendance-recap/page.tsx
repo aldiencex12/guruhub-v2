@@ -31,10 +31,10 @@ import {
   CheckCircle,
   FileText
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 
 export default function BKAttendanceRecapPage() {
-  const currentMonthStr = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+  const currentMonthStr = getTodayMonthInput(); // "YYYY-MM"
 
   const [selectedClassId, setSelectedClassId] = useState<number>(0);
   const [recapType, setRecapType] = useState<"monthly" | "semester">("monthly");
@@ -107,7 +107,7 @@ export default function BKAttendanceRecapPage() {
 
   // Modal Input State
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
-  const [inputDate, setInputDate] = useState(new Date().toISOString().slice(0, 10));
+  const [inputDate, setInputDate] = useState(getTodayDateInput());
   const [classSchedules, setClassSchedules] = useState<any[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<number>(0);
   const [studentStatuses, setStudentStatuses] = useState<Record<number, "PRESENT" | "SICK" | "PERMISSION" | "ABSENT">>({});
@@ -126,7 +126,7 @@ export default function BKAttendanceRecapPage() {
       toast.error("Pilih kelas terlebih dahulu");
       return;
     }
-    const dateToUse = targetDate || inputDate || new Date().toISOString().slice(0, 10);
+    const dateToUse = targetDate || inputDate || getTodayDateInput();
     setInputDate(dateToUse);
     loadStatusesForDate(dateToUse);
     setIsInputModalOpen(true);

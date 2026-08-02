@@ -14,7 +14,7 @@ import type { Attendance, Schedule, ClassMember, AttendanceStatus, Class, Subjec
 import { ClipboardCheck, Plus, Calendar, ArrowLeft, Check, Info, Printer, FileText, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PrintHeader } from "@/components/PrintHeader";
-import { cn, formatDate, formatTime } from "@/lib/utils";
+import { cn, formatDate, formatTime, getTodayDateInput, getTodayMonthInput } from "@/lib/utils";
 
 const STATUS_LIST: { value: AttendanceStatus; label: string; color: string; activeColor: string }[] = [
   { value: "PRESENT", label: "Hadir", color: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300", activeColor: "bg-emerald-500 text-white font-bold" },
@@ -90,7 +90,7 @@ export default function MobileAttendancePage() {
 
   // Create Form States
   const [scheduleId, setScheduleId] = useState<string>("");
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>(getTodayDateInput());
   const [notes, setNotes] = useState("");
   const [classMembers, setClassMembers] = useState<ClassMember[]>([]);
   const [details, setDetails] = useState<Record<number, { status: AttendanceStatus; notes: string }>>({});
@@ -98,8 +98,8 @@ export default function MobileAttendancePage() {
 
   // Recap Filter States
   const [recapClassId, setRecapClassId] = useState<string>("");
-  const [recapDate, setRecapDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [recapMonth, setRecapMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [recapDate, setRecapDate] = useState<string>(getTodayDateInput());
+  const [recapMonth, setRecapMonth] = useState<string>(getTodayMonthInput());
 
   // Daily Recap Load States
   const [dailySessions, setDailySessions] = useState<Attendance[]>([]);
