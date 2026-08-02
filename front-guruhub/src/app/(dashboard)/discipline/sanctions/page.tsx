@@ -528,9 +528,9 @@ export default function DisciplineSanctionsPage() {
                   <tr key={s.id} className="hover:bg-muted/40 transition-colors">
                     <td className="px-4 py-3 font-semibold text-foreground">
                       {s.studentName || `Siswa #${s.studentId}`}
-                      {s.studentNisn && (
+                      {(s.className || s.studentNisn) && (
                         <span className="block text-xs font-normal text-muted-foreground font-mono">
-                          NISN: {s.studentNisn}
+                          {s.className ? `Kelas: ${s.className}` : ""}{s.className && s.studentNisn ? " • " : ""}{s.studentNisn ? `NISN: ${s.studentNisn}` : ""}
                         </span>
                       )}
                     </td>
