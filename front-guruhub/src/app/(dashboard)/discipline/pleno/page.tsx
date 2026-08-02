@@ -987,7 +987,6 @@ export default function PlenoKenaikanPage() {
                   <p className="font-semibold text-black">Mengesahkan, Kepala Sekolah,</p>
                   <div className="h-16" />
                   <p className="font-bold underline text-black">{school?.principalName || "( ___________________________ )"}</p>
-                  {school?.principalNip ? <p className="text-[10px] text-black mt-0.5">NIP. {school.principalNip}</p> : <p className="text-[10px] text-black mt-0.5">NIP. ........................................</p>}
                 </td>
               </tr>
             </tbody>

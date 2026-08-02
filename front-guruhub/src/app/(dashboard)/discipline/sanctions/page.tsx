@@ -1145,7 +1145,7 @@ export default function DisciplineSanctionsPage() {
                           <p className="font-semibold text-black">Guru BK / Pembina Disiplin,</p>
                           <div className="h-16" />
                           <p className="font-bold underline text-black">( .................................................... )</p>
-                          <p className="text-[10px] text-black mt-0.5">NIP / NUPTK</p>
+                          <p className="text-[10px] text-black mt-0.5">Nama Terang & Tanda Tangan</p>
                         </td>
 
                         <td className="w-1/3 vertical-top px-2">
@@ -1155,7 +1155,6 @@ export default function DisciplineSanctionsPage() {
                           <p className="font-semibold text-black">Kepala Sekolah,</p>
                           <div className="h-16" />
                           <p className="font-bold underline text-black">{school?.principalName || "HERWINDA ROSITA, SE"}</p>
-                          {school?.principalNip && <p className="text-[10px] text-black mt-0.5">NIP. {school.principalNip}</p>}
                         </td>
                       </tr>
                     </tbody>
