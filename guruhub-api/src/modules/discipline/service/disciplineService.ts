@@ -1,11 +1,13 @@
 import { DisciplineRepository } from "../repository/disciplineRepository";
 import { NotFoundError, BadRequestError, ConflictError } from "../../../errors/customErrors";
 import { db } from "../../../db";
-import { disciplineCategories, disciplineTypes, disciplineSanctionLogs } from "../../../schema/discipline";
+import { disciplineCategories, disciplineTypes, disciplineSanctionLogs, disciplineSanctionThresholds, disciplineIncidentStudents, disciplineIncidents } from "../../../schema/discipline";
 import { teachers } from "../../../schema/teachers";
+import { students } from "../../../schema/students";
+import { classes } from "../../../schema/classes";
 import { academicYears } from "../../../schema/academicYears";
 import { classMembers } from "../../../schema/classMembers";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 import { logAudit } from "../../../utils/auditLogger";
 
 export class DisciplineService {
@@ -94,6 +96,29 @@ export class DisciplineService {
 
           { schoolId, categoryId: catR1Id, code: "R-OLYMP", name: "Pemenang Olimpiade / Lomba", defaultPoints: 30, description: "Juara 1, 2, atau 3 tingkat Kabupaten/Provinsi/Nasional" },
           { schoolId, categoryId: catR3Id, code: "R-ATT", name: "Kehadiran Sempurna (100% Attendance)", defaultPoints: 15, description: "Tidak pernah absen selama 1 semester" }
+        ]);
+      }
+
+      // Check sanction thresholds auto seed
+      const thresholdsRes = await this.repository.getSanctionThresholds(schoolId, { limit: 1 });
+      if (!thresholdsRes.data || thresholdsRes.data.length === 0) {
+        const { disciplineSanctionThresholds } = await import("../../../schema/discipline");
+        await db.insert(disciplineSanctionThresholds).values([
+          { schoolId, minPoints: 5, sanctionName: "TEGURAN 1", actionRequired: "PEMBINAAN_BK", description: "Teguran langsung (tertulis/tidak tertulis)" },
+          { schoolId, minPoints: 10, sanctionName: "TEGURAN 2", actionRequired: "PEMBINAAN_BK", description: "Melakukan pembinaan murid untuk menjadi Inspektur Apel" },
+          { schoolId, minPoints: 15, sanctionName: "TEGURAN 3", actionRequired: "PEMBINAAN_BK", description: "Melakukan pembinaan murid untuk menjadi kultum dan teks" },
+          { schoolId, minPoints: 20, sanctionName: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 30, sanctionName: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 40, sanctionName: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 45, sanctionName: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 50, sanctionName: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 60, sanctionName: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 70, sanctionName: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 75, sanctionName: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 80, sanctionName: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 90, sanctionName: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 95, sanctionName: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+          { schoolId, minPoints: 100, sanctionName: "DIKEMBALIKAN KEPADA ORANG TUA", actionRequired: "DIKELUARKAN", description: "Drop-Out" },
         ]);
       }
     } catch (e) {
@@ -387,6 +412,7 @@ export class DisciplineService {
 
   // --- Sanctions ---
   async getSanctionThresholds(schoolId: number, filters?: any) {
+    await this.ensureDefaults(schoolId);
     return await this.repository.getSanctionThresholds(schoolId, filters || {});
   }
 
@@ -532,23 +558,105 @@ export class DisciplineService {
     }
 
     return await this.repository.upsertPlenoOverride(schoolId, {
-      studentId: Number(data.studentId),
-      academicYearId: Number(academicYearId),
-      systemRecommendation: data.systemRecommendation,
-      finalDecision: data.finalDecision,
-      academicNotes: data.academicNotes,
-      attendanceNotes: data.attendanceNotes,
-      disciplineNotes: data.disciplineNotes,
-      overrideReason: data.overrideReason,
+      ...data,
+      academicYearId,
       decidedByUserId: userId
     });
+  }
+
+  async getAtRiskStudents(schoolId: number) {
+    // 1. Fetch sanction thresholds sorted by minPoints
+    const thresholds = await db.query.disciplineSanctionThresholds.findMany({
+      where: and(
+        eq(disciplineSanctionThresholds.schoolId, schoolId),
+        isNull(disciplineSanctionThresholds.deletedAt)
+      ),
+      orderBy: asc(disciplineSanctionThresholds.minPoints)
+    });
+
+    if (thresholds.length === 0) return [];
+
+    // 2. Fetch sum of active incident points per student
+    const activeAy = await db.query.academicYears.findFirst({
+      where: and(
+        eq(academicYears.schoolId, schoolId),
+        eq(academicYears.isActive, true)
+      )
+    });
+    const ayId = activeAy?.id;
+
+    const studentPointsQuery = await db
+      .select({
+        studentId: disciplineIncidentStudents.studentId,
+        studentName: students.name,
+        nisn: students.nisn,
+        classId: disciplineIncidentStudents.classId,
+        className: classes.name,
+        totalPoints: sql<number>`SUM(${disciplineIncidentStudents.pointSnapshot})`
+      })
+      .from(disciplineIncidentStudents)
+      .innerJoin(disciplineIncidents, eq(disciplineIncidents.id, disciplineIncidentStudents.incidentId))
+      .innerJoin(students, eq(students.id, disciplineIncidentStudents.studentId))
+      .leftJoin(classes, eq(classes.id, disciplineIncidentStudents.classId))
+      .where(
+        and(
+          eq(disciplineIncidents.schoolId, schoolId),
+          isNull(disciplineIncidents.deletedAt),
+          isNull(students.deletedAt),
+          ayId ? eq(disciplineIncidentStudents.academicYearId, ayId) : sql`1=1`
+        )
+      )
+      .groupBy(disciplineIncidentStudents.studentId, students.name, students.nisn, disciplineIncidentStudents.classId, classes.name);
+
+    const atRiskList = [];
+
+    for (const sp of studentPointsQuery) {
+      const pts = Number(sp.totalPoints || 0);
+      if (pts <= 0) continue;
+
+      // Find current threshold
+      let currentThreshold = null;
+      for (let i = thresholds.length - 1; i >= 0; i--) {
+        if (pts >= thresholds[i].minPoints) {
+          currentThreshold = thresholds[i];
+          break;
+        }
+      }
+
+      // Find next threshold
+      const nextThreshold = thresholds.find((t) => t.minPoints > pts);
+
+      if (nextThreshold) {
+        const pointsToNext = nextThreshold.minPoints - pts;
+        const progressPercentage = Math.min(100, Math.round((pts / nextThreshold.minPoints) * 100));
+
+        // Filter: at risk if >= 50% towards next threshold or pointsToNext <= 15
+        if (progressPercentage >= 50 || pointsToNext <= 15 || pts >= 10) {
+          atRiskList.push({
+            studentId: sp.studentId,
+            studentName: sp.studentName,
+            nisn: sp.nisn || "-",
+            classId: sp.classId,
+            className: sp.className || "-",
+            cumulativePoints: pts,
+            currentSanction: currentThreshold?.sanctionName || "Belum Ada Sanksi",
+            nextSanction: nextThreshold.sanctionName,
+            nextThresholdPoints: nextThreshold.minPoints,
+            pointsToNext,
+            progressPercentage,
+          });
+        }
+      }
+    }
+
+    return atRiskList.sort((a, b) => b.progressPercentage - a.progressPercentage);
   }
 
   async getStudentViolationDetails(schoolId: number, studentId: number) {
     return await this.repository.getStudentViolationDetails(schoolId, studentId);
   }
 
-  async getStudentDemeritSummaryReport(schoolId: number) {
+  async getDemeritSummaryReport(schoolId: number, _filters?: any) {
     return await this.repository.getStudentDemeritSummaryReport(schoolId);
   }
 }

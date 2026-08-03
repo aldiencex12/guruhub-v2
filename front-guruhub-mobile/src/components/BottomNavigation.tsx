@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, BarChart3, BookOpen, ShieldAlert } from "lucide-react";
+import { Home, CalendarDays, BarChart3, BookOpen, ShieldAlert, Laptop } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
 type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
+  external?: boolean;
 };
 
 const teacherNavItems: NavItem[] = [
@@ -28,13 +29,20 @@ const polsisNavItems: NavItem[] = [
   { label: "Catat Polsis", href: "/discipline", icon: ShieldAlert },
 ];
 
+const studentNavItems: NavItem[] = [
+  { label: "Beranda", href: "/dashboard", icon: Home },
+  { label: "Ujian CBT", href: "https://ujian.cbt-smpht5.my.id/", icon: Laptop, external: true },
+  { label: "Riwayat Presensi", href: "/attendance", icon: CalendarDays },
+];
+
 export default function BottomNavigation() {
   const pathname = usePathname();
   const { currentUser } = useAuthStore();
 
   const isBK = currentUser?.role === "BKTeacher";
   const isPolsis = currentUser?.role === "Polsis";
-  const navItems = isPolsis ? polsisNavItems : isBK ? bkNavItems : teacherNavItems;
+  const isStudent = currentUser?.role === "Student";
+  const navItems = isPolsis ? polsisNavItems : isBK ? bkNavItems : isStudent ? studentNavItems : teacherNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 pb-safe-bottom">
@@ -42,6 +50,23 @@ export default function BottomNavigation() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
+          if (item.external) {
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center flex-1 h-full text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-all duration-200"
+              >
+                <div className="relative flex items-center justify-center">
+                  <Icon className="h-5.5 w-5.5" />
+                </div>
+                <span className="text-[10px] font-bold mt-1">{item.label}</span>
+              </a>
+            );
+          }
 
           return (
             <Link

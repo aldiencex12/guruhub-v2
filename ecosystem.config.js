@@ -15,24 +15,18 @@ module.exports = {
     {
       name: "front-guruhub",
       cwd: "./front-guruhub",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3001",
-      max_memory_restart: "2000M",
-      exp_backoff_restart_delay: 100,
+      script: "npm",
+      args: "run dev",
       env: {
-        NODE_ENV: "production",
         PORT: 3001
       }
     },
     {
       name: "front-guruhub-mobile",
       cwd: "./front-guruhub-mobile",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3002",
-      max_memory_restart: "1500M",
-      exp_backoff_restart_delay: 100,
+      script: "npm",
+      args: "run dev",
       env: {
-        NODE_ENV: "production",
         PORT: 3002
       }
     }

@@ -799,7 +799,114 @@ export function generateSanctionReportHtml(data: {
 
   const sanctionTypeName = data.sanction.sanctionType ? data.sanction.sanctionType.replace(/_/g, " ") : "PEMBINAAN BK";
   const schoolCity = data.school.address ? data.school.address.split(",").pop()?.trim().split(" ")[0] || "Sidoarjo" : "Sidoarjo";
-  const documentTitle = data.docType || "SURAT PERINGATAN (SP)";
+  
+  // Smart Document Classification based on points & docType
+  const isTeguranInternal = (data.docType && data.docType.includes("KARTU TUGAS")) || (data.sanction.cumulativePoints < 20 && !data.docType);
+  const documentTitle = data.docType || (isTeguranInternal ? "KARTU TUGAS PEMBINAAN SISWA" : "SURAT PERINGATAN (SP) & PANGGILAN ORANG TUA");
+
+  const notesText = isTeguranInternal
+    ? `<strong>Instruksi Penugasan Pembinaan:</strong> Berdasarkan akumulasi poin kedisiplinan (<strong>${data.sanction.cumulativePoints || 0} POIN - ${sanctionTypeName}</strong>), siswa yang bersangkutan diwajibkan melaksanakan tugas pembinaan karakter di lingkungan sekolah di bawah pengawasan Guru BK & Wali Kelas.`
+    : `<strong>Catatan Pembinaan Tim BK:</strong> Siswa yang bersangkutan telah menembus batas ambang poin sanksi (<strong>${sanctionTypeName}</strong>). Diharapkan Orang Tua/Wali Siswa dapat bekerja sama mendampingi pembinaan kedisiplinan siswa di rumah serta menghadiri sesi konseling di sekolah.`;
+
+  const taskVerificationTableHtml = isTeguranInternal
+    ? `
+    <div style="margin-bottom: 20px;">
+      <h4 style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; color: #000000; padding-bottom: 4px; border-bottom: 1px solid #000000;">
+        LEMBAR VERIFIKASI & PARAF PELAKSANAAN TUGAS PEMBINAAN
+      </h4>
+      <table style="width: 100%; text-align: left; font-size: 11px; border-collapse: collapse; font-family: 'Times New Roman', Times, serif;">
+        <thead style="border-bottom: 1px solid #000000; font-weight: bold; text-transform: uppercase; color: #000000;">
+          <tr>
+            <th style="padding: 6px 8px; text-align: center; width: 32px;">No</th>
+            <th style="padding: 6px 8px;">Bentuk Penugasan Karakter / Pembinaan</th>
+            <th style="padding: 6px 8px; width: 130px;">Target Pelaksanaan</th>
+            <th style="padding: 6px 8px; width: 140px; text-align: center;">Status & Paraf Pembina</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border-bottom: 1px solid #000000; padding: 10px 8px; text-align: center; font-weight: bold;">1</td>
+            <td style="border-bottom: 1px solid #000000; padding: 10px 8px; font-weight: bold;">
+              ${data.sanction.notes || (data.sanction.cumulativePoints === 10 ? "Melakukan pembinaan murid untuk menjadi Inspektur Apel" : data.sanction.cumulativePoints === 15 ? "Melakukan pembinaan murid untuk menjadi kultum dan teks" : "Teguran & Pembinaan Kedisiplinan Karakter")}
+              <span style="display: block; font-size: 10px; font-weight: normal; color: #000000; margin-top: 2px;">Dipandu & diverifikasi oleh Guru Pembina BK / Wali Kelas</span>
+            </td>
+            <td style="border-bottom: 1px solid #000000; padding: 10px 8px; color: #000000;">.........................................</td>
+            <td style="border-bottom: 1px solid #000000; padding: 10px 8px; text-align: center;">
+              <div style="height: 35px; border: 1px dashed #000000; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #000000;">
+                [ Paraf Guru Pembina ]
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    `
+    : "";
+
+  const signaturesHtml = isTeguranInternal
+    ? `
+    <table style="width: 100%; text-align: center; font-size: 12px; color: #000000; font-family: 'Times New Roman', Times, serif; margin-top: 32px; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">Siswa yang Bersangkutan,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">${data.student.name}</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">NISN: ${data.student.nisn || "-"}</p>
+          </td>
+
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">Guru BK / Pembina Disiplin,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
+          </td>
+
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">
+              ${schoolCity}, ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <p style="font-weight: bold; color: #000000; margin: 0;">Wali Kelas,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    `
+    : `
+    <table style="width: 100%; text-align: center; font-size: 12px; color: #000000; font-family: 'Times New Roman', Times, serif; margin-top: 32px; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">Mengetahui,</p>
+            <p style="font-weight: bold; color: #000000; margin: 0;">Orang Tua / Wali Siswa,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
+          </td>
+
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">Mengetahui,</p>
+            <p style="font-weight: bold; color: #000000; margin: 0;">Guru BK / Pembina Disiplin,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
+            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
+          </td>
+
+          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
+            <p style="font-weight: bold; color: #000000; margin: 0;">
+              ${schoolCity}, ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <p style="font-weight: bold; color: #000000; margin: 0;">Kepala Sekolah,</p>
+            <div style="height: 64px;"></div>
+            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">${data.school.principalName || "HERWINDA ROSITA, SE"}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    `;
 
   return `<!DOCTYPE html>
 <html lang="id">
@@ -883,48 +990,19 @@ export function generateSanctionReportHtml(data: {
       </table>
     </div>
 
+    ${taskVerificationTableHtml}
+
     <div style="padding: 10px 14px; margin-bottom: 24px; font-family: 'Times New Roman', Times, serif;">
       <div style="display: flex; align-items: center; justify-content: space-between; font-weight: bold; color: #000000; border-bottom: 1px solid #000000; padding-bottom: 4px; margin-bottom: 4px;">
         <span>TOTAL AKUMULASI POIN KEDISIPLINAN KESELURUHAN:</span>
         <span style="font-size: 14px; color: #000000; font-weight: bold;">${data.sanction.cumulativePoints || 0} POIN</span>
       </div>
       <p style="font-size: 11px; color: #000000; line-height: 1.5; margin: 0;">
-        <strong>Catatan Pembinaan Tim BK:</strong> Siswa yang bersangkutan telah menembus batas ambang poin 
-        sanksi (<strong>${sanctionTypeName}</strong>). Diharapkan Orang Tua/Wali Siswa 
-        dapat bekerja sama mendampingi pembinaan kedisiplinan siswa di rumah serta menghadiri sesi konseling di sekolah.
+        ${notesText}
       </p>
     </div>
 
-    <table style="width: 100%; text-align: center; font-size: 12px; color: #000000; font-family: 'Times New Roman', Times, serif; margin-top: 32px; border-collapse: collapse;">
-      <tbody>
-        <tr>
-          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
-            <p style="font-weight: bold; color: #000000; margin: 0;">Mengetahui,</p>
-            <p style="font-weight: bold; color: #000000; margin: 0;">Orang Tua / Wali Siswa,</p>
-            <div style="height: 64px;"></div>
-            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
-            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
-          </td>
-
-          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
-            <p style="font-weight: bold; color: #000000; margin: 0;">Mengetahui,</p>
-            <p style="font-weight: bold; color: #000000; margin: 0;">Guru BK / Pembina Disiplin,</p>
-            <div style="height: 64px;"></div>
-            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">( .................................................... )</p>
-            <p style="font-size: 10px; color: #000000; margin: 2px 0 0 0;">Nama Terang & Tanda Tangan</p>
-          </td>
-
-          <td style="width: 33.33%; vertical-align: top; padding: 0 8px;">
-            <p style="font-weight: bold; color: #000000; margin: 0;">
-              ${schoolCity}, ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-            </p>
-            <p style="font-weight: bold; color: #000000; margin: 0;">Kepala Sekolah,</p>
-            <div style="height: 64px;"></div>
-            <p style="font-weight: bold; text-decoration: underline; color: #000000; margin: 0;">${data.school.principalName || "HERWINDA ROSITA, SE"}</p>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    ${signaturesHtml}
   </div>
 </body>
 </html>`;

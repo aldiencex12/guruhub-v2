@@ -9,8 +9,10 @@ import { classesService } from "@/services/classes";
 import { subjectsService } from "@/services/subjects";
 import { teachersService } from "@/services/teachers";
 import { disciplineService } from "@/services/discipline";
+import { studentsService } from "@/services/students";
+import { attendanceService } from "@/services/attendance";
 import type { Schedule, DashboardSummary } from "@/types";
-import { ClipboardCheck, BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw, Users, Layers, ShieldAlert, FileWarning, AlertTriangle } from "lucide-react";
+import { ClipboardCheck, BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw, Users, Layers, ShieldAlert, FileWarning, AlertTriangle, Laptop, ExternalLink, Award, Sparkles, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { formatTime } from "@/lib/utils";
 
@@ -18,6 +20,7 @@ export default function MobileDashboard() {
   const router = useRouter();
   const { currentUser } = useAuthStore();
   const isBK = currentUser?.role === "BKTeacher";
+  const isStudent = currentUser?.role === "Student";
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -25,6 +28,15 @@ export default function MobileDashboard() {
   const [bkIncidents, setBkIncidents] = useState<any[]>([]);
   const [bkSanctions, setBkSanctions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Student Dynamic States
+  const [studentDemeritPoints, setStudentDemeritPoints] = useState<number>(0);
+  const [studentIncidentsList, setStudentIncidentsList] = useState<any[]>([]);
+  const [studentAttendanceStats, setStudentAttendanceStats] = useState<{ percentage: string; presentCount: number; totalCount: number }>({
+    percentage: "-",
+    presentCount: 0,
+    totalCount: 0,
+  });
 
   useEffect(() => {
     if (currentUser?.role === "Polsis") {
@@ -46,7 +58,84 @@ export default function MobileDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (isBK) {
+      if (isStudent) {
+        // Student Dashboard Data Fetching
+        const [studentsData, incRes, schedsData, classesData, subjectsData, teachersData] = await Promise.all([
+          studentsService.getAll().catch(() => []),
+          disciplineService.getIncidents({ limit: 500 }).catch(() => ({ data: [] })),
+          schedulesService.getAll().catch(() => []),
+          classesService.getAll().catch(() => []),
+          subjectsService.getAll().catch(() => []),
+          teachersService.getAll().catch(() => []),
+        ]);
+
+        const matchedStudent = studentsData.find((st: any) => {
+          if (!currentUser) return false;
+          if (currentUser.email && st.email && st.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
+          if (st.name && currentUser.name && st.name.toLowerCase() === currentUser.name.toLowerCase()) return true;
+          if (st.nisn && currentUser.email && currentUser.email.includes(st.nisn)) return true;
+          return false;
+        });
+
+        const studentName = matchedStudent?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "Siswa";
+        setGreetingName(studentName);
+
+        // Real Discipline Incidents
+        const incidents = Array.isArray(incRes) ? incRes : (incRes as any)?.data ?? [];
+        const myIncidents = incidents.filter((i: any) => {
+          if (matchedStudent && i.studentId === matchedStudent.id) return true;
+          if (matchedStudent && i.studentName && i.studentName.toLowerCase() === matchedStudent.name.toLowerCase()) return true;
+          if (currentUser?.name && i.studentName && i.studentName.toLowerCase() === currentUser.name.toLowerCase()) return true;
+          return false;
+        });
+
+        const totalPoints = myIncidents.reduce((sum: number, inc: any) => sum + Number(inc.points || inc.demeritPoints || 0), 0);
+        setStudentDemeritPoints(totalPoints);
+        setStudentIncidentsList(myIncidents);
+
+        // Schedules today
+        const enriched = schedsData.map((s) => ({
+          ...s,
+          class: classesData.find((c) => c.id === s.classId),
+          subject: subjectsData.find((sub) => sub.id === s.subjectId),
+          teacher: teachersData.find((t) => t.id === s.teacherId),
+        }));
+
+        const todaySchedules = enriched.filter(
+          (s) => s.dayOfWeek.toLowerCase() === currentDay.toLowerCase()
+        );
+        setSchedules(todaySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime)));
+
+        // Real Attendance stats
+        try {
+          const allAtt = await attendanceService.getAll().catch(() => []);
+          let present = 0;
+          let total = 0;
+
+          allAtt.forEach((att: any) => {
+            if (Array.isArray(att.details)) {
+              att.details.forEach((d: any) => {
+                const isMyDetail = matchedStudent 
+                  ? d.studentId === matchedStudent.id || (d.studentName && d.studentName.toLowerCase() === matchedStudent.name.toLowerCase())
+                  : (d.studentName && currentUser?.name && d.studentName.toLowerCase() === currentUser.name.toLowerCase());
+                if (isMyDetail) {
+                  total++;
+                  if (d.status === "PRESENT") present++;
+                }
+              });
+            }
+          });
+
+          if (total === 0) {
+            setStudentAttendanceStats({ percentage: "Belum ada data", presentCount: 0, totalCount: 0 });
+          } else {
+            const pct = Math.round((present / total) * 100) + "%";
+            setStudentAttendanceStats({ percentage: pct, presentCount: present, totalCount: total });
+          }
+        } catch {
+          setStudentAttendanceStats({ percentage: "Belum ada data", presentCount: 0, totalCount: 0 });
+        }
+      } else if (isBK) {
         // BK Dashboard: load discipline data
         const [teachersData, incRes, sanRes] = await Promise.all([
           teachersService.getAll().catch(() => []),
@@ -131,6 +220,158 @@ export default function MobileDashboard() {
 
   const studentCount = summary?.totalStudents || 0;
   const classCount = summary?.totalClasses || 0;
+
+  // ==================== STUDENT DASHBOARD ====================
+  if (isStudent) {
+    const studentName = currentUser?.name || currentUser?.email?.split("@")[0] || "Siswa";
+
+    return (
+      <div className="space-y-6 pb-6">
+        {/* Student Welcome Card */}
+        <div className="bg-gradient-to-tr from-[#0284c7] via-[#0369a1] to-[#075985] rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+            <Award className="h-44 w-44 transform translate-x-12 translate-y-12" />
+          </div>
+          <span className="inline-block text-[9px] uppercase font-bold tracking-wider bg-white/15 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1 w-fit">
+            <Sparkles className="h-3 w-3 text-amber-300" />
+            Portal Akun Siswa SMP HT5
+          </span>
+          <h2 className="text-xl font-black mt-3 tracking-tight">Halo, {studentName}!</h2>
+          <p className="text-xs text-sky-100 mt-1 leading-relaxed">
+            Selamat belajar! Hari ini adalah <span className="font-semibold text-white">{currentDateStr}</span>.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mt-5 pt-4 border-t border-white/10">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/10">
+              <div className="text-base font-black text-amber-300">{studentDemeritPoints} Poin</div>
+              <div className="text-[8px] text-sky-100 font-bold uppercase tracking-wider">Demerit Disiplin</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/10">
+              <div className="text-base font-black text-emerald-300">{studentAttendanceStats.percentage}</div>
+              <div className="text-[8px] text-sky-100 font-bold uppercase tracking-wider">Tingkat Kehadiran</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 1. WIDGET UTAMA: UJIAN CBT ONLINE (cbt-smpht5.my.id) */}
+        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-5 text-white shadow-lg border border-indigo-700/50 space-y-3 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] uppercase font-extrabold tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+              <Laptop className="h-3.5 w-3.5 text-cyan-300 animate-pulse" />
+              PORTAL UJIAN CBT ONLINE
+            </span>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+          </div>
+
+          <div>
+            <h3 className="text-lg font-black text-white tracking-tight">Portal Ujian CBT SMP HT5</h3>
+            <p className="text-xs text-indigo-200 mt-1 leading-relaxed">
+              Masuk langsung ke portal ujian online sekolah untuk mengikuti Penilaian Tengah Semester / Ujian Harian.
+            </p>
+          </div>
+
+          <a
+            href="https://ujian.cbt-smpht5.my.id/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all transform active:scale-95 border border-cyan-400/30"
+          >
+            <span>🚀 Masuk Portal Ujian CBT</span>
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
+
+        {/* 2. WIDGET STATUS KEDISIPLINAN & KARTU KARAKTER */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-xl shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              Status Kedisiplinan & Karakter
+            </h3>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              studentDemeritPoints === 0
+                ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
+                : studentDemeritPoints < 20
+                ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                : "text-rose-600 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
+            }`}>
+              {studentDemeritPoints === 0 ? "Siswa Teladan" : studentDemeritPoints < 20 ? "Dalam Pembinaan" : "Perhatian Khusus (SP)"}
+            </span>
+          </div>
+
+          <div className={`flex items-center gap-3 p-3 border rounded-xl ${
+            studentDemeritPoints === 0
+              ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40"
+              : studentDemeritPoints < 20
+              ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"
+              : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40"
+          }`}>
+            <div className={`p-2 text-white rounded-lg shrink-0 ${
+              studentDemeritPoints === 0 ? "bg-emerald-500" : studentDemeritPoints < 20 ? "bg-amber-500" : "bg-rose-500"
+            }`}>
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <h4 className={`text-xs font-bold ${
+                studentDemeritPoints === 0 ? "text-emerald-900 dark:text-emerald-300" : studentDemeritPoints < 20 ? "text-amber-900 dark:text-amber-300" : "text-rose-900 dark:text-rose-300"
+              }`}>
+                Poin Demerit: {studentDemeritPoints} Poin
+              </h4>
+              <p className={`text-[10px] mt-0.5 ${
+                studentDemeritPoints === 0 ? "text-emerald-700 dark:text-emerald-400" : studentDemeritPoints < 20 ? "text-amber-700 dark:text-amber-400" : "text-rose-700 dark:text-rose-400"
+              }`}>
+                {studentDemeritPoints === 0
+                  ? "Tidak ada catatan pelanggaran. Pertahankan prestasi dan kedisiplinan positifmu!"
+                  : `Tercatat ${studentIncidentsList.length} kejadian pelanggaran (${studentDemeritPoints} poin). Harap lapor dan ikuti bimbingan pembinaan.`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. WIDGET JADWAL PELAJARAN HARI INI & ABSENSI */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Jadwal Kelas Hari Ini ({currentDay})
+            </h3>
+            <button onClick={fetchData} className="p-1 text-gray-400 hover:text-indigo-600 rounded-lg">
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {schedules.length === 0 ? (
+            <div className="bg-gray-50 dark:bg-gray-900 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-6 text-center text-xs text-gray-400 dark:text-gray-500">
+              Tidak ada jadwal pelajaran terdaftar untuk hari {currentDay}.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {schedules.map((schedule) => (
+                <div key={schedule.id} className="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3.5 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0">
+                      <BookOpen className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                        {schedule.subject?.name || "Mata Pelajaran"}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        Pengajar: {schedule.teacher?.name || "Guru Pengajar"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30 shrink-0">
+                    {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  // ==================== END STUDENT DASHBOARD ====================
 
   // ==================== BK DASHBOARD ====================
   if (isBK) {

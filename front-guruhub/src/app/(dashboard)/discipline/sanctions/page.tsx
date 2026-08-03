@@ -31,7 +31,8 @@ import {
   Printer,
   FileText,
   Download,
-  Eye
+  Eye,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -346,17 +347,80 @@ export default function DisciplineSanctionsPage() {
     },
   });
 
+  // Query At-Risk Students Radar
+  const { data: atRiskData, isLoading: loadingAtRisk } = useQuery({
+    queryKey: ["atRiskStudents"],
+    queryFn: async () => {
+      const res = await api.get("/discipline/at-risk");
+      return res?.data || res || [];
+    },
+  });
+
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
-  // Jika database belum ada data threshold, pakai default visual untuk display
+  // Matriks 15-tier default fallback sesuai gambar referensi pengguna
   const defaultThresholdsFallback: ThresholdItem[] = [
-    { id: 1, minPoints: 25, label: "Ambang 1 (SP-1)", actionRequired: "PEMBINAAN_BK", description: "Peringatan tertulis pertama dan konseling Tim BK." },
-    { id: 2, minPoints: 50, label: "Ambang 2 (SP-2)", actionRequired: "PANGGILAN_ORANG_TUA", description: "Surat Peringatan kedua dan pemanggilan orang tua/wali." },
-    { id: 3, minPoints: 75, label: "Ambang 3 (SP-3)", actionRequired: "SKORSING", description: "Skorsing sementara dan sidang pembinaan Kepala Sekolah." },
+    { id: 1, minPoints: 5, label: "TEGURAN 1", actionRequired: "PEMBINAAN_BK", description: "Teguran langsung (tertulis/tidak tertulis)" },
+    { id: 2, minPoints: 10, label: "TEGURAN 2", actionRequired: "PEMBINAAN_BK", description: "Melakukan pembinaan murid untuk menjadi Inspektur Apel" },
+    { id: 3, minPoints: 15, label: "TEGURAN 3", actionRequired: "PEMBINAAN_BK", description: "Melakukan pembinaan murid untuk menjadi kultum dan teks" },
+    { id: 4, minPoints: 20, label: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+    { id: 5, minPoints: 30, label: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+    { id: 6, minPoints: 40, label: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+    { id: 7, minPoints: 45, label: "PANGGILAN ORANG TUA 1", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama sehari, diambil saat pemanggilan Orang tua/Wali siswa" },
+    { id: 8, minPoints: 50, label: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 9, minPoints: 60, label: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 10, minPoints: 70, label: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 11, minPoints: 75, label: "PANGGILAN ORANG TUA 2", actionRequired: "PANGGILAN_ORANG_TUA", description: "Konsekuensi HP disimpan sekolah selama 3 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 12, minPoints: 80, label: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 13, minPoints: 90, label: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 14, minPoints: 95, label: "PANGGILAN ORANG TUA 3 (BERMATERAI)", actionRequired: "SURAT_PERINGATAN", description: "Konsekuensi HP disimpan sekolah selama 7 hari, diambil setelah pemanggilan Orang tua/Wali siswa" },
+    { id: 15, minPoints: 100, label: "DIKEMBALIKAN KEPADA ORANG TUA", actionRequired: "DIKELUARKAN", description: "Drop-Out" },
   ];
 
-  const thresholds: ThresholdItem[] = rawThresholds.length > 0 ? rawThresholds : defaultThresholdsFallback;
+  const thresholds: ThresholdItem[] = useMemo(() => {
+    const list = rawThresholds.length > 0 ? rawThresholds : defaultThresholdsFallback;
+    return [...list].sort((a, b) => a.minPoints - b.minPoints);
+  }, [rawThresholds]);
+
   const sanctions = Array.isArray(sanctionsData) ? sanctionsData : sanctionsData?.data || [];
+
+  // Helper pewarnaan tingkat keparahan (Severity Color Mapping)
+  const getSeverityStyle = (minPoints: number) => {
+    if (minPoints <= 15) {
+      return {
+        card: "bg-amber-500/10 border-amber-500/30 dark:bg-amber-950/20 dark:border-amber-700/40",
+        title: "text-amber-900 dark:text-amber-300 font-extrabold tracking-wide",
+        points: "text-amber-900 dark:text-amber-200 font-black text-base sm:text-lg",
+        desc: "text-amber-950/80 dark:text-amber-300/80 text-xs sm:text-sm",
+        icon: "text-amber-700 hover:text-amber-950 dark:text-amber-400 dark:hover:text-amber-200",
+      };
+    }
+    if (minPoints <= 45) {
+      return {
+        card: "bg-orange-500/10 border-orange-500/30 dark:bg-orange-950/20 dark:border-orange-700/40",
+        title: "text-orange-900 dark:text-orange-300 font-extrabold tracking-wide",
+        points: "text-orange-900 dark:text-orange-200 font-black text-base sm:text-lg",
+        desc: "text-orange-950/80 dark:text-orange-300/80 text-xs sm:text-sm",
+        icon: "text-orange-700 hover:text-orange-950 dark:text-orange-400 dark:hover:text-orange-200",
+      };
+    }
+    if (minPoints <= 75) {
+      return {
+        card: "bg-rose-500/10 border-rose-500/30 dark:bg-rose-950/20 dark:border-rose-700/40",
+        title: "text-rose-900 dark:text-rose-300 font-extrabold tracking-wide",
+        points: "text-rose-900 dark:text-rose-200 font-black text-base sm:text-lg",
+        desc: "text-rose-950/80 dark:text-rose-300/80 text-xs sm:text-sm",
+        icon: "text-rose-700 hover:text-rose-950 dark:text-rose-400 dark:hover:text-rose-200",
+      };
+    }
+    return {
+      card: "bg-red-500/15 border-red-500/40 dark:bg-red-950/30 dark:border-red-600/50",
+      title: "text-red-950 dark:text-red-300 font-extrabold tracking-wide",
+      points: "text-red-950 dark:text-red-100 font-black text-base sm:text-lg",
+      desc: "text-red-950/80 dark:text-red-300/80 text-xs sm:text-sm",
+      icon: "text-red-800 hover:text-red-950 dark:text-red-400 dark:hover:text-red-200",
+    };
+  };
 
   // --- Pagination calculations ---
   const totalItems = sanctions.length;
@@ -391,7 +455,7 @@ export default function DisciplineSanctionsPage() {
   // Submit Threshold (Create / Update)
   const handleSubmitThreshold = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingThreshold) {
+    if (editingThreshold && rawThresholds.some((rt: any) => rt.id === editingThreshold.id)) {
       updateThresholdMutation.mutate(
         { id: editingThreshold.id, data: formData },
         {
@@ -406,7 +470,7 @@ export default function DisciplineSanctionsPage() {
     } else {
       createThresholdMutation.mutate(formData, {
         onSuccess: () => {
-          toast.success("Ambang batas sanksi baru berhasil ditambahkan.");
+          toast.success("Ambang batas sanksi baru berhasil disimpan.");
           setIsModalOpen(false);
           refetchThresholds();
         },
@@ -416,15 +480,19 @@ export default function DisciplineSanctionsPage() {
   };
 
   // Delete Threshold
-  const handleDeleteThreshold = (id: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus aturan ambang batas ini?")) return;
-    deleteThresholdMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success("Ambang batas sanksi berhasil dihapus.");
-        refetchThresholds();
-      },
-      onError: () => toast.error("Gagal menghapus ambang batas sanksi."),
-    });
+  const handleDeleteThreshold = (item: ThresholdItem) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus aturan ambang batas "${item.sanctionName || item.label}"?`)) return;
+    if (rawThresholds.some((rt: any) => rt.id === item.id)) {
+      deleteThresholdMutation.mutate(item.id, {
+        onSuccess: () => {
+          toast.success("Ambang batas sanksi berhasil dihapus.");
+          refetchThresholds();
+        },
+        onError: () => toast.error("Gagal menghapus ambang batas sanksi."),
+      });
+    } else {
+      toast.info("Matriks ini adalah preset standar bawaan.");
+    }
   };
 
   return (
@@ -450,54 +518,148 @@ export default function DisciplineSanctionsPage() {
         {loadingThresholds ? (
           <LoadingState message="Memuat aturan ambang batas..." rows={2} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {thresholds.map((t, idx) => {
-              const borderColors = [
-                "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300",
-                "border-orange-500/30 bg-orange-500/5 text-orange-700 dark:text-orange-300",
-                "border-rose-500/30 bg-rose-500/5 text-rose-700 dark:text-rose-300",
-              ];
-              const colorClass = borderColors[idx % borderColors.length];
+              const style = getSeverityStyle(t.minPoints);
+              const titleText = t.sanctionName || t.label || `Ambang ${idx + 1}`;
 
               return (
                 <div 
                   key={t.id || idx} 
-                  className={cn("p-4 rounded-xl border relative group transition-all hover:shadow-sm", colorClass)}
+                  className={cn(
+                    "p-5 rounded-2xl border flex flex-col justify-between relative group transition-all duration-200 hover:shadow-md min-h-[140px]",
+                    style.card
+                  )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider">
-                      {t.sanctionName || t.label || `Ambang ${idx + 1} (${t.actionRequired})`}
-                    </span>
-                    <span className="font-extrabold text-base">
-                      {t.minPoints} Poin
-                    </span>
+                  <div>
+                    {/* Header Row: Title on Left, Points Badge on Right */}
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className={cn("text-xs sm:text-sm uppercase font-extrabold leading-tight", style.title)}>
+                        {titleText}
+                      </h4>
+                      <span className={cn("shrink-0 font-black text-right whitespace-nowrap ml-2", style.points)}>
+                        {t.minPoints} Poin
+                      </span>
+                    </div>
+
+                    {/* Middle Body: Consequence / Description */}
+                    <p className={cn("mt-3 leading-relaxed", style.desc)}>
+                      {t.description || `Pemicu sanksi otomatis (${t.actionRequired}) saat poin akumulasi mencapai ${t.minPoints}.`}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                    {t.description || `Pemicu sanksi otomatis (${t.actionRequired}) saat poin akumulasi mencapai ${t.minPoints}.`}
-                  </p>
-                  
-                  {/* Actions for Threshold items if present in DB */}
-                  {rawThresholds.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-gray-200/50 dark:border-gray-800/50 flex items-center justify-end gap-2 opacity-90 group-hover:opacity-100 transition-opacity">
+
+                  {/* Footer Row: Edit and Delete action icons at bottom right */}
+                  <div className="mt-4 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                    {t.minPoints <= 15 ? (
+                      <button
+                        onClick={() => {
+                          setLetterDocType("KARTU TUGAS PEMBINAAN SISWA");
+                          setPrintSanction({
+                            id: 999,
+                            studentId: 101,
+                            studentName: "Ahmad Rizky (Contoh Siswa)",
+                            nisn: "0081234567",
+                            className: "8-A",
+                            sanctionType: t.sanctionName || t.label || "PEMBINAAN_BK",
+                            cumulativePoints: t.minPoints,
+                            issuedDate: new Date().toISOString(),
+                            status: "ACTIVE",
+                            notes: t.description
+                          });
+                        }}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-900 dark:text-amber-200 hover:bg-amber-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Lihat Format Slip Kartu Tugas Pembinaan"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>Contoh Slip Kartu Tugas</span>
+                      </button>
+                    ) : <div />}
+
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => openEditModal(t)}
-                        className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                        className={cn("p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors", style.icon)}
                         title="Edit Ambang Batas"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteThreshold(t.id)}
-                        className="p-1 hover:bg-rose-500/20 text-rose-600 rounded transition-colors"
+                        onClick={() => handleDeleteThreshold(t)}
+                        className="p-1.5 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors"
                         title="Hapus Ambang Batas"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Radar Siswa Berisiko Tinggi (At-Risk Early Warning Radar) */}
+      <SectionCard 
+        title="Radar Siswa Berisiko Tinggi (At-Risk Early Warning)"
+        action={
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
+            Deteksi Dini Pembinaan BK
+          </span>
+        }
+      >
+        {loadingAtRisk ? (
+          <LoadingState message="Menganalisis siswa berisiko..." rows={2} />
+        ) : !atRiskData || atRiskData.length === 0 ? (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Tidak ada siswa yang terdeteksi berisiko tinggi saat ini. Seluruh siswa dalam batas aman.</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {atRiskData.map((item: any, idx: number) => (
+              <div 
+                key={item.studentId || idx}
+                className="p-4 rounded-2xl border bg-card hover:bg-accent/40 border-amber-500/30 dark:border-amber-700/40 shadow-sm transition-all space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-foreground">{item.studentName}</h4>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{item.className} • NISN: {item.nisn}</p>
+                  </div>
+                  <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap">
+                    {item.cumulativePoints} Poin
+                  </span>
+                </div>
+
+                {/* Progress bar towards next sanction */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Sanksi Berikutnya: <strong className="text-foreground font-bold">{item.nextSanction}</strong></span>
+                    <span className="font-black text-amber-600 dark:text-amber-400">Sisa {item.pointsToNext} Poin</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-muted/80 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 rounded-full transition-all duration-500"
+                      style={{ width: `${item.progressPercentage}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground text-[11px]">Sanksi Saat Ini: <strong className="text-foreground">{item.currentSanction}</strong></span>
+                  <button
+                    onClick={() => {
+                      toast.info(`Menjadwalkan konseling BK preventif untuk ${item.studentName}`);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Konseling BK
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </SectionCard>
@@ -602,15 +764,15 @@ export default function DisciplineSanctionsPage() {
                             }
                           }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-colors cursor-pointer"
-                          title="Unduh PDF langsung tanpa preview"
+                          title="Unduh Dokumen PDF"
                         >
                           <Download className="w-3.5 h-3.5" />
                           Unduh PDF
                         </button>
                         <button
                           onClick={() => setPrintSanction(s)}
-                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-semibold py-1.5 px-3 rounded shadow-sm transition-colors flex items-center gap-1.5"
-                          title="Preview Surat"
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-semibold py-1.5 px-3 rounded shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+                          title="Preview Surat / Dokumen"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Preview</span>
@@ -917,6 +1079,7 @@ export default function DisciplineSanctionsPage() {
                       onChange={(e) => setLetterDocType(e.target.value)}
                       className="bg-slate-800 rounded-lg px-3 py-1.5 font-medium text-white outline-none focus:ring-2 focus:ring-indigo-500 border-none"
                     >
+                      <option value="KARTU TUGAS PEMBINAAN SISWA">KARTU TUGAS PEMBINAAN SISWA (Slip A5/F4)</option>
                       <option value="SURAT PERINGATAN (SP)">SURAT PERINGATAN (SP)</option>
                       <option value="SURAT PEMBINAAN KEDISIPLINAN">SURAT PEMBINAAN KEDISIPLINAN</option>
                       <option value="REKAPITULASI POIN KEDISIPLINAN SISWA">REKAPITULASI POIN KEDISIPLINAN</option>

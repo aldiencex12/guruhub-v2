@@ -105,9 +105,12 @@ export const disciplineRoutes = new Elysia({ prefix: "/discipline" })
     })
   )
 
-  // --- Analytics ---
+  // --- Analytics & At-Risk ---
   .get("/analytics", disciplineController.getAnalytics, {
     beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis", "Student"])
+  })
+  .get("/at-risk", disciplineController.getAtRiskStudents, {
+    beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis"])
   })
 
   // --- Pleno Kenaikan Kelas ---

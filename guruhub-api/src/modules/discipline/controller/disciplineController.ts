@@ -163,6 +163,15 @@ export const disciplineController = {
     };
   },
 
+  getAtRiskStudents: async ({ schoolId }: any) => {
+    const data = await service.getAtRiskStudents(schoolId);
+    return {
+      success: true,
+      message: "Daftar siswa berisiko tinggi berhasil diambil",
+      data
+    };
+  },
+
   // --- Pleno Kenaikan Kelas ---
   getPlenoDecisions: async ({ schoolId, query }: any) => {
     const filters = {

@@ -23,8 +23,12 @@ const STATUS_LIST: { value: AttendanceStatus; label: string; color: string; acti
   { value: "ABSENT", label: "Alfa", color: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300", activeColor: "bg-rose-500 text-white font-bold" },
 ];
 
+import { useAuthStore } from "@/store/auth.store";
+
 export default function MobileAttendancePage() {
   const searchParams = useSearchParams();
+  const { currentUser } = useAuthStore();
+  const isStudent = currentUser?.role === "Student";
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"sessions" | "daily" | "monthly">("sessions");
@@ -342,7 +346,7 @@ export default function MobileAttendancePage() {
             <ClipboardCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           )}
           <span className="text-sm font-bold text-gray-900 dark:text-white">
-            {isCreating ? "Input Absensi Baru" : "Absensi Siswa"}
+            {isCreating ? "Input Absensi Baru" : isStudent ? "Riwayat Presensi Saya" : "Absensi Siswa"}
           </span>
         </div>
 
@@ -356,7 +360,7 @@ export default function MobileAttendancePage() {
               <Printer className="h-4 w-4" />
             </button>
           )}
-          {!isCreating && (
+          {!isCreating && !isStudent && (
             <button
               onClick={() => setIsCreating(true)}
               className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm"
