@@ -109,15 +109,25 @@ export default function MobileDashboard() {
 
         // Real Attendance stats
         try {
-          const allAtt = await attendanceService.getAll().catch(() => []);
+          const summaryAttList = await attendanceService.getAll().catch(() => []);
+          const fullAttList = await Promise.all(
+            summaryAttList.map(async (att) => {
+              try {
+                return await attendanceService.getById(att.id);
+              } catch {
+                return att;
+              }
+            })
+          );
+
           let present = 0;
           let total = 0;
 
-          allAtt.forEach((att: any) => {
+          fullAttList.forEach((att: any) => {
             if (Array.isArray(att.details)) {
               att.details.forEach((d: any) => {
                 const isMyDetail = matchedStudent 
-                  ? d.studentId === matchedStudent.id || (d.studentName && d.studentName.toLowerCase() === matchedStudent.name.toLowerCase())
+                  ? Number(d.studentId) === Number(matchedStudent.id) || (d.studentName && d.studentName.toLowerCase() === matchedStudent.name.toLowerCase())
                   : (d.studentName && currentUser?.name && d.studentName.toLowerCase() === currentUser.name.toLowerCase());
                 if (isMyDetail) {
                   total++;
@@ -271,15 +281,13 @@ export default function MobileDashboard() {
             </p>
           </div>
 
-          <a
-            href="https://ujian.cbt-smpht5.my.id/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all transform active:scale-95 border border-cyan-400/30"
+          <Link
+            href="/cbt"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all transform active:scale-95 border border-cyan-400/30 text-center"
           >
             <span>🚀 Masuk Portal Ujian CBT</span>
-            <ExternalLink className="h-4 w-4" />
-          </a>
+            <Laptop className="h-4 w-4" />
+          </Link>
         </div>
 
         {/* 2. WIDGET STATUS KEDISIPLINAN & KARTU KARAKTER */}
