@@ -71,6 +71,7 @@ export default function MobileDashboard() {
 
         const matchedStudent = studentsData.find((st: any) => {
           if (!currentUser) return false;
+          if (st.userId && currentUser.id && Number(st.userId) === Number(currentUser.id)) return true;
           if (currentUser.email && st.email && st.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
           if (st.name && currentUser.name && st.name.toLowerCase() === currentUser.name.toLowerCase()) return true;
           if (st.nisn && currentUser.email && currentUser.email.includes(st.nisn)) return true;
