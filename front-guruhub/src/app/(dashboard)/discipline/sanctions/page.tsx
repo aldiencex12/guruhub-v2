@@ -595,6 +595,7 @@ export default function DisciplineSanctionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClassId, setSelectedClassId] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [pointsSortOrder, setPointsSortOrder] = useState<"DESC" | "ASC">("DESC");
 
   // Query Classes for Dropdown Filter
   const { data: classesData } = useQuery({
@@ -613,7 +614,7 @@ export default function DisciplineSanctionsPage() {
   // Filtered At-Risk Data
   const filteredAtRiskData = useMemo(() => {
     const rawList = Array.isArray(atRiskData) ? atRiskData : [];
-    return rawList.filter((item: any) => {
+    const list = rawList.filter((item: any) => {
       const q = searchQuery.toLowerCase().trim();
       const matchSearch = !q || 
         (item.studentName && item.studentName.toLowerCase().includes(q)) ||
@@ -624,11 +625,17 @@ export default function DisciplineSanctionsPage() {
       
       return matchSearch && matchClass;
     });
-  }, [atRiskData, searchQuery, selectedClassId]);
+
+    return list.sort((a: any, b: any) => {
+      const pA = Number(a.cumulativePoints || a.totalPoints || 0);
+      const pB = Number(b.cumulativePoints || b.totalPoints || 0);
+      return pointsSortOrder === "ASC" ? pA - pB : pB - pA;
+    });
+  }, [atRiskData, searchQuery, selectedClassId, pointsSortOrder]);
 
   // Filtered Counseling Schedules
   const filteredCounselingSchedules = useMemo(() => {
-    return counselingSchedules.filter((cs: any) => {
+    const list = counselingSchedules.filter((cs: any) => {
       const q = searchQuery.toLowerCase().trim();
       const matchSearch = !q ||
         (cs.studentName && cs.studentName.toLowerCase().includes(q)) ||
@@ -641,7 +648,13 @@ export default function DisciplineSanctionsPage() {
 
       return matchSearch && matchClass && matchStatus;
     });
-  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus]);
+
+    return list.sort((a: any, b: any) => {
+      const pA = Number(a.cumulativePoints || 0);
+      const pB = Number(b.cumulativePoints || 0);
+      return pointsSortOrder === "ASC" ? pA - pB : pB - pA;
+    });
+  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, pointsSortOrder]);
 
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
@@ -855,20 +868,31 @@ export default function DisciplineSanctionsPage() {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="ALL">📋 Semua Status Pelaksanaan</option>
                 <option value="BELUM">🟡 BELUM Pelaksanaan</option>
                 <option value="SUDAH">🟢 SUDAH Pelaksanaan</option>
               </select>
+
+              {/* Sort Order Poin */}
+              <select
+                value={pointsSortOrder}
+                onChange={(e) => setPointsSortOrder(e.target.value as "DESC" | "ASC")}
+                className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="DESC">🔴 Poin Terbesar ➔ Terkecil</option>
+                <option value="ASC">🟢 Poin Terkecil ➔ Terbesar</option>
+              </select>
             </div>
 
-            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL") && (
+            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || pointsSortOrder !== "DESC") && (
               <button
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedClassId("ALL");
                   setSelectedStatus("ALL");
+                  setPointsSortOrder("DESC");
                 }}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
               >
