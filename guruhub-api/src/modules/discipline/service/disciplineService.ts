@@ -617,8 +617,9 @@ export class DisciplineService {
       // Find current threshold
       let currentThreshold = null;
       for (let i = thresholds.length - 1; i >= 0; i--) {
-        if (pts >= thresholds[i].minPoints) {
-          currentThreshold = thresholds[i];
+        const thresh = thresholds[i];
+        if (thresh && pts >= thresh.minPoints) {
+          currentThreshold = thresh;
           break;
         }
       }
@@ -712,8 +713,8 @@ export class DisciplineService {
               status: "BELUM",
               cumulativePoints: pts,
             };
-            const created = await this.repository.createCounselingSchedule(schoolId, newSchedule);
-            allSchedulesTrack.push(created || newSchedule);
+            const insertId = await this.repository.createCounselingSchedule(schoolId, newSchedule);
+            allSchedulesTrack.push({ id: Number(insertId), ...newSchedule });
           }
         }
 
@@ -737,8 +738,8 @@ export class DisciplineService {
               status: "BELUM",
               cumulativePoints: pts,
             };
-            const created = await this.repository.createCounselingSchedule(schoolId, newSchedule);
-            allSchedulesTrack.push(created || newSchedule);
+            const insertId = await this.repository.createCounselingSchedule(schoolId, newSchedule);
+            allSchedulesTrack.push({ id: Number(insertId), ...newSchedule });
           }
         }
       }
