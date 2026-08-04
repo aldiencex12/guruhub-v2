@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { disciplineService } from "@/services/discipline";
+import { classesService } from "@/services/classes";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
 import { 
@@ -37,7 +38,9 @@ import {
   Calendar,
   Clock,
   MapPin,
-  User
+  User,
+  Filter,
+  Search
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -588,6 +591,58 @@ export default function DisciplineSanctionsPage() {
     },
   });
 
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+
+  // Query Classes for Dropdown Filter
+  const { data: classesData } = useQuery({
+    queryKey: ["classes-list"],
+    queryFn: async () => {
+      try {
+        const res = await classesService.getClasses();
+        return Array.isArray(res) ? res : res?.data || [];
+      } catch {
+        return [];
+      }
+    }
+  });
+  const classesList = Array.isArray(classesData) ? classesData : [];
+
+  // Filtered At-Risk Data
+  const filteredAtRiskData = useMemo(() => {
+    const rawList = Array.isArray(atRiskData) ? atRiskData : [];
+    return rawList.filter((item: any) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch = !q || 
+        (item.studentName && item.studentName.toLowerCase().includes(q)) ||
+        (item.nisn && item.nisn.toLowerCase().includes(q)) ||
+        (item.className && item.className.toLowerCase().includes(q));
+      
+      const matchClass = selectedClassId === "ALL" || String(item.classId) === String(selectedClassId) || (item.className && item.className.toLowerCase().includes(selectedClassId.toLowerCase()));
+      
+      return matchSearch && matchClass;
+    });
+  }, [atRiskData, searchQuery, selectedClassId]);
+
+  // Filtered Counseling Schedules
+  const filteredCounselingSchedules = useMemo(() => {
+    return counselingSchedules.filter((cs: any) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch = !q ||
+        (cs.studentName && cs.studentName.toLowerCase().includes(q)) ||
+        (cs.nisn && cs.nisn.toLowerCase().includes(q)) ||
+        (cs.className && cs.className.toLowerCase().includes(q)) ||
+        (cs.taskType && cs.taskType.toLowerCase().includes(q));
+      
+      const matchClass = selectedClassId === "ALL" || String(cs.classId) === String(selectedClassId) || (cs.className && cs.className.toLowerCase().includes(selectedClassId.toLowerCase()));
+      const matchStatus = selectedStatus === "ALL" || cs.status === selectedStatus;
+
+      return matchSearch && matchClass && matchStatus;
+    });
+  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus]);
+
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
   // Matriks 15-tier default fallback sesuai gambar referensi pengguna
@@ -761,26 +816,87 @@ export default function DisciplineSanctionsPage() {
       {/* ── TAB 1: LOG & REKAP SANKSI SISWA ── */}
       {activeTab === "sanctions_log" && (
         <div className="space-y-6">
+          {/* Filter Bar */}
+          <div className="p-4 bg-card rounded-2xl border border-border flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto flex-1">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-[220px] max-w-md">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari nama siswa, NISN, atau kelas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Kelas */}
+              <div className="flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="ALL">🏫 Semua Kelas</option>
+                  {classesList.map((c: any) => (
+                    <option key={c.id} value={c.name || c.id}>{c.name || c.className}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter Status */}
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="ALL">📋 Semua Status Pelaksanaan</option>
+                <option value="BELUM">🟡 BELUM Pelaksanaan</option>
+                <option value="SUDAH">🟢 SUDAH Pelaksanaan</option>
+              </select>
+            </div>
+
+            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedClassId("ALL");
+                  setSelectedStatus("ALL");
+                }}
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+
           {/* Radar Siswa Berisiko Tinggi (At-Risk Early Warning Radar) */}
           <SectionCard 
             title="Radar Siswa Berisiko Tinggi (At-Risk Early Warning)"
             action={
               <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
-                Deteksi Dini Pembinaan BK
+                Deteksi Dini Pembinaan BK ({filteredAtRiskData.length})
               </span>
             }
           >
             {loadingAtRisk ? (
               <LoadingState message="Menganalisis siswa berisiko..." rows={2} />
-            ) : !atRiskData || atRiskData.length === 0 ? (
+            ) : filteredAtRiskData.length === 0 ? (
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Tidak ada siswa yang terdeteksi berisiko tinggi saat ini. Seluruh siswa dalam batas aman.</span>
+                <span>{searchQuery || selectedClassId !== "ALL" ? "Tidak ada siswa berisiko yang cocok dengan filter pencarian." : "Tidak ada siswa yang terdeteksi berisiko tinggi saat ini. Seluruh siswa dalam batas aman."}</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {atRiskData.map((item: any, idx: number) => (
+                {filteredAtRiskData.map((item: any, idx: number) => (
                   <div 
                     key={item.studentId || idx}
                     className="p-4 rounded-2xl border bg-card hover:bg-accent/40 border-amber-500/30 dark:border-amber-700/40 shadow-sm transition-all space-y-3"
@@ -832,7 +948,7 @@ export default function DisciplineSanctionsPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsPolsisModalOpen(true)}
-                  disabled={counselingSchedules.length === 0}
+                  disabled={filteredCounselingSchedules.length === 0}
                   className="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
                   title="Cetak Daftar Penugasan Resmi POLSIS & Pembina Lapangan"
                 >
@@ -841,15 +957,15 @@ export default function DisciplineSanctionsPage() {
                 </button>
                 <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                  {counselingSchedules.length} Sesi Terdaftar
+                  {filteredCounselingSchedules.length} Sesi Terdaftar
                 </span>
               </div>
             }
           >
-            {counselingSchedules.length === 0 ? (
+            {filteredCounselingSchedules.length === 0 ? (
               <div className="p-4 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground flex items-center gap-2">
                 <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span>Belum ada jadwal penugasan pembinaan yang diterbitkan untuk minggu ini. Klik <strong>"Jadwalkan BK"</strong> pada siswa berisiko di atas untuk menambahkan jadwal baru.</span>
+                <span>{searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" ? "Tidak ada jadwal pembinaan yang cocok dengan filter pencarian." : "Belum ada jadwal penugasan pembinaan yang diterbitkan untuk minggu ini. Klik \"Jadwalkan BK\" pada siswa berisiko di atas untuk menambahkan jadwal baru."}</span>
               </div>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-border">
@@ -865,7 +981,7 @@ export default function DisciplineSanctionsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60 bg-card">
-                    {counselingSchedules.map((cs) => (
+                    {filteredCounselingSchedules.map((cs) => (
                       <tr key={cs.id} className="hover:bg-accent/30 transition-colors">
                         <td className="py-3 px-3 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 font-bold text-foreground">
