@@ -596,6 +596,8 @@ export default function DisciplineSanctionsPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [pointsSortOrder, setPointsSortOrder] = useState<"DESC" | "ASC">("DESC");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Query Classes for Dropdown Filter
   const { data: classesData } = useQuery({
@@ -671,7 +673,11 @@ export default function DisciplineSanctionsPage() {
 
       const matchStatus = selectedStatus === "ALL" || cs.status === selectedStatus;
 
-      return matchSearch && matchClass && matchStatus;
+      const csDateStr = typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "";
+      const matchStart = !startDate || (csDateStr && csDateStr >= startDate);
+      const matchEnd = !endDate || (csDateStr && csDateStr <= endDate);
+
+      return matchSearch && matchClass && matchStatus && matchStart && matchEnd;
     });
 
     return list.sort((a: any, b: any) => {
@@ -679,7 +685,7 @@ export default function DisciplineSanctionsPage() {
       const pB = Number(b.cumulativePoints || 0);
       return pointsSortOrder === "ASC" ? pA - pB : pB - pA;
     });
-  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, pointsSortOrder]);
+  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, pointsSortOrder, startDate, endDate]);
 
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
@@ -909,17 +915,39 @@ export default function DisciplineSanctionsPage() {
                 <option value="DESC">🔴 Poin Terbesar ➔ Terkecil</option>
                 <option value="ASC">🟢 Poin Terkecil ➔ Terbesar</option>
               </select>
+
+              {/* Filter Rentang Tanggal Sesi */}
+              <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border border-border">
+                <span className="text-[11px] font-semibold text-muted-foreground pl-1.5">Tgl:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-2 py-1 text-xs font-semibold rounded-lg border border-border bg-background outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  title="Tanggal Mulai"
+                />
+                <span className="text-[11px] text-muted-foreground font-bold">-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-2 py-1 text-xs font-semibold rounded-lg border border-border bg-background outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  title="Tanggal Sampai"
+                />
+              </div>
             </div>
 
-            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || pointsSortOrder !== "DESC") && (
+            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || pointsSortOrder !== "DESC" || startDate || endDate) && (
               <button
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedClassId("ALL");
                   setSelectedStatus("ALL");
                   setPointsSortOrder("DESC");
+                  setStartDate("");
+                  setEndDate("");
                 }}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline whitespace-nowrap"
               >
                 Reset Filter
               </button>
@@ -2171,7 +2199,10 @@ export default function DisciplineSanctionsPage() {
                       REKAPITULASI UNTUK POLISI SISWA (POLSIS) & PEMBINA LAPANGAN
                     </p>
                     <p className="text-[10px] text-black italic mt-1">
-                      Periode Tugas: {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                      Periode Tugas: {startDate ? startDate : "Semua Tanggal"} {endDate ? ` s/d ${endDate}` : ""}
+                      {selectedClassId !== "ALL" ? ` • Kelas: ${selectedClassId}` : ""}
+                      {selectedStatus !== "ALL" ? ` • Status: ${selectedStatus}` : ""}
+                      {searchQuery ? ` • Kata Kunci: "${searchQuery}"` : ""}
                     </p>
                   </div>
 
@@ -2199,31 +2230,39 @@ export default function DisciplineSanctionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {counselingSchedules.map((cs, idx) => (
-                        <tr key={cs.id || idx} className="border-b border-black">
-                          <td className="border border-black px-2 py-2 text-center font-bold">{idx + 1}</td>
-                          <td className="border border-black px-2 py-2 whitespace-nowrap">
-                            <div className="font-bold">{typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "-"}</div>
-                            <div className="text-[10px] text-gray-700 font-mono">{cs.time}</div>
-                          </td>
-                          <td className="border border-black px-2 py-2">
-                            <div className="font-black text-black">{cs.studentName}</div>
-                            <div className="text-[10px] text-gray-700 font-mono">NISN: {cs.nisn || "-"} • Kelas: {cs.className}</div>
-                          </td>
-                          <td className="border border-black px-2 py-2 text-center font-bold text-black">{cs.cumulativePoints} Poin</td>
-                          <td className="border border-black px-2 py-2 font-bold">{cs.taskType || "Pembinaan Kedisiplinan"}</td>
-                          <td className="border border-black px-2 py-2">
-                            <div className="font-semibold">{cs.counselorName}</div>
-                            <div className="text-[10px] text-gray-700">{cs.location}</div>
-                          </td>
-                          <td className="border border-black px-2 py-2 text-center align-middle">
-                            <div className="text-[9px] text-gray-500 border border-dashed border-black/40 rounded py-1 px-1">
-                              [  ] SUDAH<br />
-                              <span className="font-mono text-[8px]">Paraf: _______</span>
-                            </div>
+                      {filteredCounselingSchedules.length === 0 ? (
+                        <tr className="border-b border-black">
+                          <td colSpan={7} className="text-center py-4 font-bold text-gray-500 italic">
+                            Tidak ada data jadwal penugasan yang sesuai dengan filter.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredCounselingSchedules.map((cs, idx) => (
+                          <tr key={cs.id || idx} className="border-b border-black">
+                            <td className="border border-black px-2 py-2 text-center font-bold">{idx + 1}</td>
+                            <td className="border border-black px-2 py-2 whitespace-nowrap">
+                              <div className="font-bold">{typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "-"}</div>
+                              <div className="text-[10px] text-gray-700 font-mono">{cs.time}</div>
+                            </td>
+                            <td className="border border-black px-2 py-2">
+                              <div className="font-black text-black">{cs.studentName}</div>
+                              <div className="text-[10px] text-gray-700 font-mono">NISN: {cs.nisn || "-"} • Kelas: {cs.className}</div>
+                            </td>
+                            <td className="border border-black px-2 py-2 text-center font-bold text-black">{cs.cumulativePoints} Poin</td>
+                            <td className="border border-black px-2 py-2 font-bold">{cs.taskType || "Pembinaan Kedisiplinan"}</td>
+                            <td className="border border-black px-2 py-2">
+                              <div className="font-semibold">{cs.counselorName}</div>
+                              <div className="text-[10px] text-gray-700">{cs.location}</div>
+                            </td>
+                            <td className="border border-black px-2 py-2 text-center align-middle">
+                              <div className="text-[9px] text-gray-500 border border-dashed border-black/40 rounded py-1 px-1">
+                                [  ] SUDAH<br />
+                                <span className="font-mono text-[8px]">Paraf: _______</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
 
