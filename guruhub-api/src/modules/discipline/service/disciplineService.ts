@@ -665,8 +665,28 @@ export class DisciplineService {
     try {
       const atRiskStudents = await this.getAtRiskStudents(schoolId);
       const existingSchedules = await this.repository.getAllCounselingSchedulesIncludingDeleted(schoolId);
+      const allSchedulesTrack = [...existingSchedules];
 
       const today = new Date();
+
+      const findNextAvailableDate = (taskType: string, startOffset: number) => {
+        let days = startOffset;
+        while (true) {
+          const candidate = new Date(today.getTime() + 86400000 * days).toISOString().split("T")[0];
+          const isOccupied = allSchedulesTrack.some(
+            (s: any) => {
+              const sDate = typeof s.scheduleDate === "string" ? s.scheduleDate.split("T")[0] : s.scheduleDate ? new Date(s.scheduleDate).toISOString().split("T")[0] : "";
+              const sTask = String(s.taskType || "").toLowerCase();
+              const targetTask = String(taskType).toLowerCase();
+              return sDate === candidate && (sTask.includes(targetTask) || targetTask.includes(sTask));
+            }
+          );
+          if (!isOccupied) {
+            return candidate;
+          }
+          days++;
+        }
+      };
 
       for (const student of atRiskStudents) {
         const pts = Number(student.cumulativePoints || 0);
@@ -674,14 +694,14 @@ export class DisciplineService {
 
         // Check 15 Poin (Kultum)
         if (pts >= 15) {
-          const hasKultumTask = existingSchedules.some(
+          const hasKultumTask = allSchedulesTrack.some(
             (s: any) => Number(s.studentId) === Number(student.studentId) && 
               (String(s.taskType).includes("Kultum") || Number(s.cumulativePoints) === 15)
           );
 
           if (!hasKultumTask) {
-            const targetDate = new Date(today.getTime() + 86400000 * 2).toISOString().split("T")[0];
-            await this.repository.createCounselingSchedule(schoolId, {
+            const targetDate = findNextAvailableDate("Kultum", 2);
+            const newSchedule = {
               studentId: student.studentId,
               taskType: "Pembuat Teks & Petugas Kultum (15 Poin)",
               scheduleDate: targetDate,
@@ -691,20 +711,22 @@ export class DisciplineService {
               notes: "Auto System: Siswa terdata 15 Poin - Tugas pembinaan membuat teks & membaca kultum keagamaan.",
               status: "BELUM",
               cumulativePoints: pts,
-            });
+            };
+            const created = await this.repository.createCounselingSchedule(schoolId, newSchedule);
+            allSchedulesTrack.push(created || newSchedule);
           }
         }
 
         // Check 10 Poin (Apel)
         if (pts >= 10) {
-          const hasApelTask = existingSchedules.some(
+          const hasApelTask = allSchedulesTrack.some(
             (s: any) => Number(s.studentId) === Number(student.studentId) && 
               (String(s.taskType).includes("Apel") || String(s.taskType).includes("Inspektur") || Number(s.cumulativePoints) === 10)
           );
 
           if (!hasApelTask) {
-            const targetDate = new Date(today.getTime() + 86400000 * 1).toISOString().split("T")[0];
-            await this.repository.createCounselingSchedule(schoolId, {
+            const targetDate = findNextAvailableDate("Apel", 1);
+            const newSchedule = {
               studentId: student.studentId,
               taskType: "Inspektur / Petugas Apel (10 Poin)",
               scheduleDate: targetDate,
@@ -714,7 +736,9 @@ export class DisciplineService {
               notes: "Auto System: Siswa terdata 10 Poin - Tugas pembinaan karakter menjadi Inspektur / Petugas Apel.",
               status: "BELUM",
               cumulativePoints: pts,
-            });
+            };
+            const created = await this.repository.createCounselingSchedule(schoolId, newSchedule);
+            allSchedulesTrack.push(created || newSchedule);
           }
         }
       }

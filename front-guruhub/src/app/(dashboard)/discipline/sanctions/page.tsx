@@ -597,8 +597,6 @@ export default function DisciplineSanctionsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedTaskType, setSelectedTaskType] = useState<string>("ALL");
   const [pointsSortOrder, setPointsSortOrder] = useState<"DESC" | "ASC">("DESC");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
 
   // Query Classes for Dropdown Filter
   const { data: classesData } = useQuery({
@@ -677,11 +675,7 @@ export default function DisciplineSanctionsPage() {
       const matchTaskType = selectedTaskType === "ALL" ||
         (cs.taskType && cs.taskType.toLowerCase().includes(selectedTaskType.toLowerCase().trim()));
 
-      const csDateStr = typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "";
-      const matchStart = !startDate || (csDateStr && csDateStr >= startDate);
-      const matchEnd = !endDate || (csDateStr && csDateStr <= endDate);
-
-      return matchSearch && matchClass && matchStatus && matchTaskType && matchStart && matchEnd;
+      return matchSearch && matchClass && matchStatus && matchTaskType;
     });
 
     return list.sort((a: any, b: any) => {
@@ -689,7 +683,7 @@ export default function DisciplineSanctionsPage() {
       const pB = Number(b.cumulativePoints || 0);
       return pointsSortOrder === "ASC" ? pA - pB : pB - pA;
     });
-  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, selectedTaskType, pointsSortOrder, startDate, endDate]);
+  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, selectedTaskType, pointsSortOrder]);
 
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
@@ -930,29 +924,9 @@ export default function DisciplineSanctionsPage() {
                 <option value="DESC">🔴 Poin Terbesar ➔ Terkecil</option>
                 <option value="ASC">🟢 Poin Terkecil ➔ Terbesar</option>
               </select>
-
-              {/* Filter Rentang Tanggal Sesi */}
-              <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border border-border">
-                <span className="text-[11px] font-semibold text-muted-foreground pl-1.5">Tgl:</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="px-2 py-1 text-xs font-semibold rounded-lg border border-border bg-background outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-                  title="Tanggal Mulai"
-                />
-                <span className="text-[11px] text-muted-foreground font-bold">-</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="px-2 py-1 text-xs font-semibold rounded-lg border border-border bg-background outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-                  title="Tanggal Sampai"
-                />
-              </div>
             </div>
 
-            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || selectedTaskType !== "ALL" || pointsSortOrder !== "DESC" || startDate || endDate) && (
+            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || selectedTaskType !== "ALL" || pointsSortOrder !== "DESC") && (
               <button
                 onClick={() => {
                   setSearchQuery("");
@@ -960,8 +934,6 @@ export default function DisciplineSanctionsPage() {
                   setSelectedStatus("ALL");
                   setSelectedTaskType("ALL");
                   setPointsSortOrder("DESC");
-                  setStartDate("");
-                  setEndDate("");
                 }}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline whitespace-nowrap"
               >
@@ -2215,7 +2187,7 @@ export default function DisciplineSanctionsPage() {
                       REKAPITULASI UNTUK POLISI SISWA (POLSIS) & PEMBINA LAPANGAN
                     </p>
                     <p className="text-[10px] text-black italic mt-1">
-                      Periode Tugas: {startDate ? startDate : "Semua Tanggal"} {endDate ? ` s/d ${endDate}` : ""}
+                      Periode Tugas: {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                       {selectedClassId !== "ALL" ? ` • Kelas: ${selectedClassId}` : ""}
                       {selectedStatus !== "ALL" ? ` • Status: ${selectedStatus}` : ""}
                       {selectedTaskType !== "ALL" ? ` • Tugas: ${selectedTaskType}` : ""}
