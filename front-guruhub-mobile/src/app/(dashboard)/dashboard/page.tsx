@@ -126,7 +126,7 @@ export default function MobileDashboard() {
           fullAttList.forEach((att: any) => {
             if (Array.isArray(att.details)) {
               att.details.forEach((d: any) => {
-                const isMyDetail = matchedStudent 
+                const isMyDetail = matchedStudent
                   ? Number(d.studentId) === Number(matchedStudent.id) || (d.studentName && d.studentName.toLowerCase() === matchedStudent.name.toLowerCase())
                   : (d.studentName && currentUser?.name && d.studentName.toLowerCase() === currentUser.name.toLowerCase());
                 if (isMyDetail) {
@@ -297,38 +297,33 @@ export default function MobileDashboard() {
               <ShieldCheck className="h-4 w-4 text-emerald-500" />
               Status Kedisiplinan & Karakter
             </h3>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-              studentDemeritPoints === 0
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${studentDemeritPoints === 0
                 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
                 : studentDemeritPoints < 20
-                ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
-                : "text-rose-600 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
-            }`}>
+                  ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                  : "text-rose-600 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
+              }`}>
               {studentDemeritPoints === 0 ? "Siswa Teladan" : studentDemeritPoints < 20 ? "Dalam Pembinaan" : "Perhatian Khusus (SP)"}
             </span>
           </div>
 
-          <div className={`flex items-center gap-3 p-3 border rounded-xl ${
-            studentDemeritPoints === 0
+          <div className={`flex items-center gap-3 p-3 border rounded-xl ${studentDemeritPoints === 0
               ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40"
               : studentDemeritPoints < 20
-              ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"
-              : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40"
-          }`}>
-            <div className={`p-2 text-white rounded-lg shrink-0 ${
-              studentDemeritPoints === 0 ? "bg-emerald-500" : studentDemeritPoints < 20 ? "bg-amber-500" : "bg-rose-500"
+                ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"
+                : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40"
             }`}>
+            <div className={`p-2 text-white rounded-lg shrink-0 ${studentDemeritPoints === 0 ? "bg-emerald-500" : studentDemeritPoints < 20 ? "bg-amber-500" : "bg-rose-500"
+              }`}>
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
-              <h4 className={`text-xs font-bold ${
-                studentDemeritPoints === 0 ? "text-emerald-900 dark:text-emerald-300" : studentDemeritPoints < 20 ? "text-amber-900 dark:text-amber-300" : "text-rose-900 dark:text-rose-300"
-              }`}>
+              <h4 className={`text-xs font-bold ${studentDemeritPoints === 0 ? "text-emerald-900 dark:text-emerald-300" : studentDemeritPoints < 20 ? "text-amber-900 dark:text-amber-300" : "text-rose-900 dark:text-rose-300"
+                }`}>
                 Poin Demerit: {studentDemeritPoints} Poin
               </h4>
-              <p className={`text-[10px] mt-0.5 ${
-                studentDemeritPoints === 0 ? "text-emerald-700 dark:text-emerald-400" : studentDemeritPoints < 20 ? "text-amber-700 dark:text-amber-400" : "text-rose-700 dark:text-rose-400"
-              }`}>
+              <p className={`text-[10px] mt-0.5 ${studentDemeritPoints === 0 ? "text-emerald-700 dark:text-emerald-400" : studentDemeritPoints < 20 ? "text-amber-700 dark:text-amber-400" : "text-rose-700 dark:text-rose-400"
+                }`}>
                 {studentDemeritPoints === 0
                   ? "Tidak ada catatan pelanggaran. Pertahankan prestasi dan kedisiplinan positifmu!"
                   : `Tercatat ${studentIncidentsList.length} kejadian pelanggaran (${studentDemeritPoints} poin). Harap lapor dan ikuti bimbingan pembinaan.`}
@@ -550,11 +545,10 @@ export default function MobileDashboard() {
               className="flex items-start justify-between bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4 rounded-xl shadow-sm gap-3 hover:border-indigo-150 dark:hover:border-indigo-950 transition-all duration-300"
             >
               <div className="flex gap-3">
-                <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
-                  task.type.toLowerCase() === "attendance" 
-                    ? "bg-rose-50 text-rose-500 dark:bg-rose-950/20 dark:text-rose-400" 
+                <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${task.type.toLowerCase() === "attendance"
+                    ? "bg-rose-50 text-rose-500 dark:bg-rose-950/20 dark:text-rose-400"
                     : "bg-amber-50 text-amber-500 dark:bg-amber-950/20 dark:text-amber-400"
-                }`}>
+                  }`}>
                   <AlertCircle className="h-4.5 w-4.5" />
                 </div>
                 <div>
@@ -564,11 +558,10 @@ export default function MobileDashboard() {
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                     Kelas {task.className} • Mapel {task.subjectName}
                   </p>
-                  <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded mt-2 font-medium ${
-                    task.type.toLowerCase() === "attendance"
+                  <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded mt-2 font-medium ${task.type.toLowerCase() === "attendance"
                       ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30"
                       : "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
-                  }`}>
+                    }`}>
                     Jam: {task.time}
                   </span>
                 </div>

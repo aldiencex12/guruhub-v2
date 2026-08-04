@@ -659,5 +659,92 @@ export class DisciplineService {
   async getDemeritSummaryReport(schoolId: number, _filters?: any) {
     return await this.repository.getStudentDemeritSummaryReport(schoolId);
   }
+
+  // --- Counseling Schedules / Restorative Tasks ---
+  async syncAutomaticCounselingSchedules(schoolId: number) {
+    try {
+      const atRiskStudents = await this.getAtRiskStudents(schoolId);
+      const existingSchedules = await this.repository.getAllCounselingSchedulesIncludingDeleted(schoolId);
+
+      const today = new Date();
+
+      for (const student of atRiskStudents) {
+        const pts = Number(student.cumulativePoints || 0);
+        if (pts < 10) continue;
+
+        // Check 15 Poin (Kultum)
+        if (pts >= 15) {
+          const hasKultumTask = existingSchedules.some(
+            (s: any) => Number(s.studentId) === Number(student.studentId) && 
+              (String(s.taskType).includes("Kultum") || Number(s.cumulativePoints) === 15)
+          );
+
+          if (!hasKultumTask) {
+            const targetDate = new Date(today.getTime() + 86400000 * 2).toISOString().split("T")[0];
+            await this.repository.createCounselingSchedule(schoolId, {
+              studentId: student.studentId,
+              taskType: "Pembuat Teks & Petugas Kultum (15 Poin)",
+              scheduleDate: targetDate,
+              scheduleTime: "11:30 WIB",
+              location: "Masjid Sekolah",
+              counselorName: "Guru PAI / Pembina Keagamaan",
+              notes: "Auto System: Siswa terdata 15 Poin - Tugas pembinaan membuat teks & membaca kultum keagamaan.",
+              status: "BELUM",
+              cumulativePoints: pts,
+            });
+          }
+        }
+
+        // Check 10 Poin (Apel)
+        if (pts >= 10) {
+          const hasApelTask = existingSchedules.some(
+            (s: any) => Number(s.studentId) === Number(student.studentId) && 
+              (String(s.taskType).includes("Apel") || String(s.taskType).includes("Inspektur") || Number(s.cumulativePoints) === 10)
+          );
+
+          if (!hasApelTask) {
+            const targetDate = new Date(today.getTime() + 86400000 * 1).toISOString().split("T")[0];
+            await this.repository.createCounselingSchedule(schoolId, {
+              studentId: student.studentId,
+              taskType: "Inspektur / Petugas Apel (10 Poin)",
+              scheduleDate: targetDate,
+              scheduleTime: "07:00 WIB",
+              location: "Lapangan Utama Upacara",
+              counselorName: "Pembina Upacara / Tim Kesiswaan",
+              notes: "Auto System: Siswa terdata 10 Poin - Tugas pembinaan karakter menjadi Inspektur / Petugas Apel.",
+              status: "BELUM",
+              cumulativePoints: pts,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error in syncAutomaticCounselingSchedules:", err);
+    }
+  }
+
+  async getCounselingSchedules(schoolId: number) {
+    await this.syncAutomaticCounselingSchedules(schoolId);
+    return await this.repository.getCounselingSchedules(schoolId);
+  }
+
+  async createCounselingSchedule(schoolId: number, data: any) {
+    if (!data.studentId) throw new BadRequestError("Student ID wajib diisi.");
+    if (!data.scheduleDate) throw new BadRequestError("Tanggal jadwal wajib diisi.");
+    if (!data.taskType) throw new BadRequestError("Jenis penugasan wajib diisi.");
+
+    return await this.repository.createCounselingSchedule(schoolId, data);
+  }
+
+  async updateCounselingSchedule(schoolId: number, id: number, data: any) {
+    if (data.status === "SUDAH") {
+      return await this.repository.deleteCounselingSchedule(schoolId, id);
+    }
+    return await this.repository.updateCounselingSchedule(schoolId, id, data);
+  }
+
+  async deleteCounselingSchedule(schoolId: number, id: number) {
+    return await this.repository.deleteCounselingSchedule(schoolId, id);
+  }
 }
 

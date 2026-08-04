@@ -9,14 +9,15 @@ import {
   disciplineIncidentAttachments, 
   disciplineSanctionThresholds, 
   disciplineSanctionLogs,
-  disciplinePlenoDecisions
+  disciplinePlenoDecisions,
+  disciplineCounselingSchedules
 } from "../../../schema/discipline";
 import { users } from "../../../schema/users";
 import { teachers } from "../../../schema/teachers";
 import { students } from "../../../schema/students";
 import { classes } from "../../../schema/classes";
 import { classMembers } from "../../../schema/classMembers";
-import { and, eq, or, like, isNull, sql, gte, lte, desc } from "drizzle-orm";
+import { and, eq, ne, or, like, isNull, sql, gte, lte, desc } from "drizzle-orm";
 
 // Tipe spesifik untuk transaksi Drizzle ORM
 export type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -816,6 +817,108 @@ export class DisciplineRepository {
         recommendation: s.systemRecommendation
       }))
     };
+  }
+
+  // --- Counseling Schedules / Restorative Tasks ---
+  async getCounselingSchedules(schoolId: number) {
+    const list = await db
+      .select({
+        id: disciplineCounselingSchedules.id,
+        schoolId: disciplineCounselingSchedules.schoolId,
+        studentId: disciplineCounselingSchedules.studentId,
+        studentName: students.name,
+        nisn: students.nisn,
+        className: classes.name,
+        taskType: disciplineCounselingSchedules.taskType,
+        date: disciplineCounselingSchedules.scheduleDate,
+        time: disciplineCounselingSchedules.scheduleTime,
+        location: disciplineCounselingSchedules.location,
+        counselorName: disciplineCounselingSchedules.counselorName,
+        notes: disciplineCounselingSchedules.notes,
+        status: disciplineCounselingSchedules.status,
+        cumulativePoints: disciplineCounselingSchedules.cumulativePoints,
+        createdAt: disciplineCounselingSchedules.createdAt,
+      })
+      .from(disciplineCounselingSchedules)
+      .innerJoin(students, eq(disciplineCounselingSchedules.studentId, students.id))
+      .leftJoin(classMembers, eq(classMembers.studentId, students.id))
+      .leftJoin(classes, eq(classMembers.classId, classes.id))
+      .where(
+        and(
+          eq(disciplineCounselingSchedules.schoolId, schoolId),
+          isNull(disciplineCounselingSchedules.deletedAt),
+          ne(disciplineCounselingSchedules.status, "SUDAH")
+        )
+      )
+      .orderBy(desc(disciplineCounselingSchedules.scheduleDate), desc(disciplineCounselingSchedules.id));
+
+    return list;
+  }
+
+  async getAllCounselingSchedulesIncludingDeleted(schoolId: number) {
+    return await db
+      .select({
+        id: disciplineCounselingSchedules.id,
+        studentId: disciplineCounselingSchedules.studentId,
+        taskType: disciplineCounselingSchedules.taskType,
+        cumulativePoints: disciplineCounselingSchedules.cumulativePoints,
+        status: disciplineCounselingSchedules.status,
+      })
+      .from(disciplineCounselingSchedules)
+      .where(eq(disciplineCounselingSchedules.schoolId, schoolId));
+  }
+
+  async createCounselingSchedule(schoolId: number, data: any) {
+    const [result] = await db.insert(disciplineCounselingSchedules).values({
+      schoolId,
+      studentId: Number(data.studentId),
+      academicYearId: data.academicYearId ? Number(data.academicYearId) : null,
+      taskType: data.taskType,
+      scheduleDate: data.scheduleDate,
+      scheduleTime: data.scheduleTime || "09:00 WIB",
+      location: data.location || "Ruang BK",
+      counselorName: data.counselorName || "Guru BK / Pembina",
+      notes: data.notes || null,
+      status: data.status || "BELUM",
+      cumulativePoints: Number(data.cumulativePoints || 0),
+    });
+
+    return result.insertId;
+  }
+
+  async updateCounselingSchedule(schoolId: number, id: number, data: any) {
+    await db
+      .update(disciplineCounselingSchedules)
+      .set({
+        ...(data.taskType && { taskType: data.taskType }),
+        ...(data.scheduleDate && { scheduleDate: data.scheduleDate }),
+        ...(data.scheduleTime && { scheduleTime: data.scheduleTime }),
+        ...(data.location && { location: data.location }),
+        ...(data.counselorName && { counselorName: data.counselorName }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+        ...(data.status && { status: data.status }),
+        ...(data.cumulativePoints !== undefined && { cumulativePoints: Number(data.cumulativePoints) }),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(disciplineCounselingSchedules.schoolId, schoolId),
+          eq(disciplineCounselingSchedules.id, id),
+          isNull(disciplineCounselingSchedules.deletedAt)
+        )
+      );
+  }
+
+  async deleteCounselingSchedule(schoolId: number, id: number) {
+    await db
+      .update(disciplineCounselingSchedules)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(disciplineCounselingSchedules.schoolId, schoolId),
+          eq(disciplineCounselingSchedules.id, id)
+        )
+      );
   }
 }
 

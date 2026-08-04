@@ -213,6 +213,42 @@ export const disciplineController = {
       message: "Ringkasan data poin demerit siswa berhasil diambil",
       data
     };
+  },
+
+  // --- Counseling Schedules / Restorative Tasks ---
+  getCounselingSchedules: async ({ schoolId }: any) => {
+    const data = await service.getCounselingSchedules(schoolId);
+    return {
+      success: true,
+      message: "Jadwal penugasan pembinaan berhasil diambil",
+      data
+    };
+  },
+
+  createCounselingSchedule: async ({ schoolId, body }: any) => {
+    const data = await service.createCounselingSchedule(schoolId, body);
+    return {
+      success: true,
+      message: "Jadwal penugasan pembinaan berhasil dibuat",
+      data
+    };
+  },
+
+  updateCounselingSchedule: async ({ schoolId, params, body }: any) => {
+    const data = await service.updateCounselingSchedule(schoolId, Number(params.id), body);
+    return {
+      success: true,
+      message: "Jadwal penugasan pembinaan berhasil diperbarui",
+      data
+    };
+  },
+
+  deleteCounselingSchedule: async ({ schoolId, params }: any) => {
+    await service.deleteCounselingSchedule(schoolId, Number(params.id));
+    return {
+      success: true,
+      message: "Jadwal penugasan pembinaan berhasil dihapus"
+    };
   }
 };
 

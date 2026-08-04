@@ -114,5 +114,11 @@ export const disciplineService = {
     api.get(`/discipline/pleno/incidents/${studentId}`),
   getDemeritSummaryReport: () =>
     api.get("/discipline/demerit-summary"),
+
+  // Counseling Schedules / Restorative Tasks
+  getCounselingSchedules: () => api.get("/discipline/counseling-schedules"),
+  createCounselingSchedule: (data: any) => api.post("/discipline/counseling-schedules", data),
+  updateCounselingSchedule: (id: number, data: any) => api.put(`/discipline/counseling-schedules/${id}`, data),
+  deleteCounselingSchedule: (id: number) => api.delete(`/discipline/counseling-schedules/${id}`),
 };
 

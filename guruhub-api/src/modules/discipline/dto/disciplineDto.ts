@@ -157,3 +157,28 @@ export const CreateThresholdDto = t.Object({
   description: t.Optional(t.String({ maxLength: 500 }))
 });
 
+// 7. Counseling Schedules
+export const CreateCounselingScheduleDto = t.Object({
+  studentId: t.Number({ error: "ID Siswa wajib diisi" }),
+  academicYearId: t.Optional(t.Number()),
+  taskType: t.String({ minLength: 1, maxLength: 255, error: "Jenis penugasan wajib diisi" }),
+  scheduleDate: t.String({ minLength: 1, error: "Tanggal jadwal wajib diisi" }),
+  scheduleTime: t.Optional(t.String()),
+  location: t.Optional(t.String()),
+  counselorName: t.Optional(t.String()),
+  notes: t.Optional(t.String()),
+  status: t.Optional(t.Union([t.Literal("BELUM"), t.Literal("SUDAH")])),
+  cumulativePoints: t.Optional(t.Number())
+});
+
+export const UpdateCounselingScheduleDto = t.Object({
+  taskType: t.Optional(t.String()),
+  scheduleDate: t.Optional(t.String()),
+  scheduleTime: t.Optional(t.String()),
+  location: t.Optional(t.String()),
+  counselorName: t.Optional(t.String()),
+  notes: t.Optional(t.String()),
+  status: t.Optional(t.Union([t.Literal("BELUM"), t.Literal("SUDAH")])),
+  cumulativePoints: t.Optional(t.Number())
+});
+

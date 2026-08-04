@@ -295,3 +295,34 @@ export const disciplinePlenoDecisions = mysqlTable("discipline_pleno_decisions",
     foreignColumns: [academicYears.id]
   }).onDelete("cascade")
 ]);
+
+// 11. Jadwal & Penugasan Pembinaan Disiplin (Discipline Counseling Schedules)
+export const disciplineCounselingSchedules = mysqlTable("discipline_counseling_schedules", {
+  id: serial("id").primaryKey(),
+  schoolId: bigint("school_id", { mode: "number", unsigned: true }).notNull(),
+  studentId: bigint("student_id", { mode: "number", unsigned: true }).notNull(),
+  academicYearId: bigint("academic_year_id", { mode: "number", unsigned: true }),
+  taskType: varchar("task_type", { length: 255 }).notNull(),
+  scheduleDate: date("schedule_date").notNull(),
+  scheduleTime: varchar("schedule_time", { length: 50 }),
+  location: varchar("location", { length: 255 }),
+  counselorName: varchar("counselor_name", { length: 255 }),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["BELUM", "SUDAH"]).default("BELUM").notNull(),
+  cumulativePoints: int("cumulative_points").default(0),
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => [
+  index("idx_counsel_sch_student").on(table.schoolId, table.studentId),
+  foreignKey({
+    name: "fk_counsel_sch_school",
+    columns: [table.schoolId],
+    foreignColumns: [schools.id]
+  }).onDelete("cascade"),
+  foreignKey({
+    name: "fk_counsel_sch_student",
+    columns: [table.studentId],
+    foreignColumns: [students.id]
+  }).onDelete("cascade")
+]);

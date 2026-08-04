@@ -8,7 +8,8 @@ import {
   CreateDisciplineTypeDto, UpdateDisciplineTypeDto, TypeFilterQuery, 
   CreateIncidentDto, IncidentFilterQuery, UpdateIncidentStatusDto,
   SanctionLogFilterQuery, UpdateSanctionStatusDto,
-  CreateThresholdDto, UpdateThresholdDto
+  CreateThresholdDto, UpdateThresholdDto,
+  CreateCounselingScheduleDto, UpdateCounselingScheduleDto
 } from "../dto/disciplineDto";
 
 export const disciplineRoutes = new Elysia({ prefix: "/discipline" })
@@ -125,5 +126,23 @@ export const disciplineRoutes = new Elysia({ prefix: "/discipline" })
   })
   .get("/demerit-summary", disciplineController.getDemeritSummaryReport, {
     beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor"])
-  });
+  })
+
+  // --- Counseling Schedules / Restorative Tasks ---
+  .group("/counseling-schedules", (app) => app
+    .get("/", disciplineController.getCounselingSchedules, {
+      beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis"])
+    })
+    .post("/", disciplineController.createCounselingSchedule, {
+      body: CreateCounselingScheduleDto,
+      beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis"])
+    })
+    .put("/:id", disciplineController.updateCounselingSchedule, {
+      body: UpdateCounselingScheduleDto,
+      beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis"])
+    })
+    .delete("/:id", disciplineController.deleteCounselingSchedule, {
+      beforeHandle: requireRoles(["SuperAdmin", "SchoolAdmin", "Principal", "Teacher", "HomeroomTeacher", "BKTeacher", "Counselor", "Polsis"])
+    })
+  );
 

@@ -36,6 +36,7 @@ DELIMITER ;
 
 -- 1. Pelanggaran & Log Sanksi SP (Exact Schema Table Names)
 CALL truncate_if_exists('discipline_sanction_logs');
+CALL truncate_if_exists('discipline_counseling_schedules');
 CALL truncate_if_exists('discipline_incident_students');
 CALL truncate_if_exists('discipline_incident_witnesses');
 CALL truncate_if_exists('discipline_incident_attachments');

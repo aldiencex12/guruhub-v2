@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { disciplineService } from "@/services/discipline";
 import { api } from "@/services/api";
@@ -32,7 +32,12 @@ import {
   FileText,
   Download,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  UserCheck,
+  Calendar,
+  Clock,
+  MapPin,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -64,6 +69,7 @@ export default function DisciplineSanctionsPage() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("2025/2026");
   const [letterDocType, setLetterDocType] = useState<string>("SURAT PERINGATAN (SP)");
   const [paperSize, setPaperSize] = useState<"F4" | "A4">("F4");
+  const [isPolsisModalOpen, setIsPolsisModalOpen] = useState<boolean>(false);
 
   // Query Student Incidents for Kop Surat Recap
   const { data: studentIncidentsData, isLoading: loadingStudentIncidents } = useQuery({
@@ -314,6 +320,85 @@ export default function DisciplineSanctionsPage() {
     }, 400);
   };
 
+  // Handler Print Roster Penugasan POLSIS (Official Collective Document)
+  const handlePrintPolsisRoster = () => {
+    const element = document.getElementById("printable-polsis-roster-content");
+    if (!element) {
+      toast.error("Dokumen Rekap POLSIS tidak ditemukan");
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    const headStyleElements = Array.from(document.head.querySelectorAll("style, link[rel='stylesheet']"))
+      .map((el) => el.outerHTML)
+      .join("\n");
+
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>DAFTAR_PENUGASAN_PEMBINAAN_POLSIS</title>
+          ${headStyleElements}
+          <style>
+            @page {
+              size: ${paperSize === "F4" ? "210mm 330mm" : "A4"};
+              margin: 0mm;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              background: #ffffff !important;
+              color: #000000 !important;
+              font-family: Arial, Helvetica, sans-serif;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            * { box-sizing: border-box; }
+            #printable-polsis-roster-content {
+              width: 100% !important;
+              max-width: 210mm !important;
+              margin: 0 auto !important;
+              padding: 10mm 12mm !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              background: #ffffff !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${element.outerHTML}
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      }, 1000);
+    }, 400);
+  };
+
+  // State Tab Switcher
+  const [activeTab, setActiveTab] = useState<"sanctions_log" | "threshold_rules">("sanctions_log");
+
   // State Modal Threshold
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingThreshold, setEditingThreshold] = useState<ThresholdItem | null>(null);
@@ -328,6 +413,153 @@ export default function DisciplineSanctionsPage() {
     actionRequired: "PEMBINAAN_BK",
     description: "",
   });
+
+  // State Modal Penjadwalan Konseling BK
+  const [isCounselingModalOpen, setIsCounselingModalOpen] = useState(false);
+  const [counselingTargetStudent, setCounselingTargetStudent] = useState<any>(null);
+  const [counselingForm, setCounselingForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    time: "09:00",
+    location: "Ruang Bimbingan Konseling (BK)",
+    counselorName: "Guru BK / Tim Kesiswaan",
+    notes: "Pembinaan kedisiplinan preventif dan evaluasi akumulasi poin pelanggaran siswa.",
+  });
+  const [counselingSchedules, setCounselingSchedules] = useState<any[]>([]);
+
+  const openCounselingModal = (student: any) => {
+    setCounselingTargetStudent(student);
+    const pts = student.cumulativePoints || student.totalPoints || 0;
+    
+    let taskTypeSuggested = "Konseling BK Preventif";
+    let defaultLocation = "Ruang Bimbingan Konseling (BK)";
+    let defaultCounselor = "Guru BK / Tim Kesiswaan";
+
+    if (pts >= 100) {
+      taskTypeSuggested = "Sidang Pleno Pengembalian Ke Orang Tua (100 Poin)";
+      defaultLocation = "Ruang Rapat Utama";
+      defaultCounselor = "Kepala Sekolah & Komite Sekolah";
+    } else if (pts >= 75) {
+      taskTypeSuggested = "Konseling Kepala Sekolah & SP 3 Bermaterai (75 Poin)";
+      defaultLocation = "Ruang Kepala Sekolah";
+      defaultCounselor = "Kepala Sekolah & Tim Kesiswaan";
+    } else if (pts >= 50) {
+      taskTypeSuggested = "Konseling Khusus & Panggilan Orang Tua 2 (50 Poin)";
+      defaultLocation = "Ruang BK & Wali Kelas";
+      defaultCounselor = "Guru BK & Wali Kelas";
+    } else if (pts >= 25) {
+      taskTypeSuggested = "Konseling BK & Panggilan Orang Tua 1 (25 Poin)";
+      defaultLocation = "Ruang BK & Kesiswaan";
+      defaultCounselor = "Guru BK & Tim Kesiswaan";
+    } else if (pts >= 15) {
+      taskTypeSuggested = "Pembuat Teks & Petugas Kultum (15 Poin)";
+      defaultLocation = "Masjid Sekolah";
+      defaultCounselor = "Guru PAI / Pembina Keagamaan";
+    } else if (pts >= 10) {
+      taskTypeSuggested = "Inspektur / Petugas Apel (10 Poin)";
+      defaultLocation = "Lapangan Utama Upacara";
+      defaultCounselor = "Pembina Upacara / Tim Kesiswaan";
+    }
+
+    setCounselingForm({
+      date: new Date().toISOString().split("T")[0],
+      time: pts >= 10 && pts <= 15 ? "07:00" : "09:00",
+      location: defaultLocation,
+      counselorName: defaultCounselor,
+      notes: `Pembinaan karakter (${taskTypeSuggested}) untuk ${student.studentName || student.name || 'Siswa'}.`,
+    });
+    setIsCounselingModalOpen(true);
+  };
+
+  // Real API integration for Counseling Schedules
+  const { data: realCounselingData, refetch: refetchCounselingSchedules } = useQuery({
+    queryKey: ["counseling-schedules"],
+    queryFn: async () => {
+      try {
+        const res = await disciplineService.getCounselingSchedules();
+        return res.data || res || [];
+      } catch (e) {
+        console.error("Failed to load counseling schedules", e);
+        return [];
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (realCounselingData && Array.isArray(realCounselingData)) {
+      setCounselingSchedules(realCounselingData);
+    }
+  }, [realCounselingData]);
+
+  const handleSaveCounselingSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!counselingTargetStudent) return;
+    const pts = counselingTargetStudent.cumulativePoints || counselingTargetStudent.totalPoints || 0;
+    
+    let taskTypeSuggested = "Konseling BK Preventif";
+    if (pts >= 100) taskTypeSuggested = "Sidang Pleno Pengembalian Ke Orang Tua (100 Poin)";
+    else if (pts >= 75) taskTypeSuggested = "Konseling Kepala Sekolah & SP 3 Bermaterai (75 Poin)";
+    else if (pts >= 50) taskTypeSuggested = "Konseling Khusus & Panggilan Orang Tua 2 (50 Poin)";
+    else if (pts >= 25) taskTypeSuggested = "Konseling BK & Panggilan Orang Tua 1 (25 Poin)";
+    else if (pts >= 15) taskTypeSuggested = "Pembuat Teks & Petugas Kultum (15 Poin)";
+    else if (pts >= 10) taskTypeSuggested = "Inspektur / Petugas Apel (10 Poin)";
+
+    const targetStudentId = counselingTargetStudent.studentId || counselingTargetStudent.id;
+
+    try {
+      await disciplineService.createCounselingSchedule({
+        studentId: targetStudentId,
+        taskType: taskTypeSuggested,
+        scheduleDate: counselingForm.date,
+        scheduleTime: `${counselingForm.time} WIB`,
+        location: counselingForm.location,
+        counselorName: counselingForm.counselorName,
+        notes: counselingForm.notes,
+        status: "BELUM",
+        cumulativePoints: pts,
+      });
+
+      toast.success(`Jadwal pembinaan berhasil dibuat untuk ${counselingTargetStudent.studentName || counselingTargetStudent.name} pada tanggal ${counselingForm.date}`);
+      refetchCounselingSchedules();
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menyimpan ke database.");
+    } finally {
+      setIsCounselingModalOpen(false);
+    }
+  };
+
+  const handleUpdateCounselingStatus = async (id: number, newStatus: string) => {
+    if (newStatus === "SUDAH") {
+      setCounselingSchedules((prev) => prev.filter((item) => item.id !== id));
+      try {
+        await disciplineService.deleteCounselingSchedule(id);
+        toast.success("Pelaksanaan pembinaan telah Selesai! Jadwal otomatis terhapus dari rekap.");
+        refetchCounselingSchedules();
+      } catch (e: any) {
+        toast.error(e?.message || "Gagal memperbarui status pelaksanaan.");
+      }
+    } else {
+      setCounselingSchedules((prev) => prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)));
+      try {
+        await disciplineService.updateCounselingSchedule(id, { status: newStatus });
+        toast.success(`Status pelaksanaan pembinaan diubah menjadi ${newStatus}`);
+        refetchCounselingSchedules();
+      } catch (e: any) {
+        toast.error(e?.message || "Gagal memperbarui status pelaksanaan.");
+      }
+    }
+  };
+
+  const handleDeleteCounselingSchedule = async (id: number) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus jadwal pembinaan ini?")) return;
+    setCounselingSchedules((prev) => prev.filter((item) => item.id !== id));
+    try {
+      await disciplineService.deleteCounselingSchedule(id);
+      toast.success("Jadwal pembinaan terhapus.");
+      refetchCounselingSchedules();
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal menghapus jadwal");
+    }
+  };
 
   // Query Thresholds
   const { data: thresholdsData, isLoading: loadingThresholds, refetch: refetchThresholds } = useQuery({
@@ -502,167 +734,340 @@ export default function DisciplineSanctionsPage() {
         description="Pemantauan ambang batas demerit poin dan penerbitan sanksi otomatis untuk siswa berisiko."
       />
 
-      {/* Threshold Rules Grid */}
-      <SectionCard 
-        title="Aturan Ambang Batas Sanksi Otomatis (Threshold Rules)"
-        action={
-          <button
-            onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Tambah Ambang Batas
-          </button>
-        }
-      >
-        {loadingThresholds ? (
-          <LoadingState message="Memuat aturan ambang batas..." rows={2} />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {thresholds.map((t, idx) => {
-              const style = getSeverityStyle(t.minPoints);
-              const titleText = t.sanctionName || t.label || `Ambang ${idx + 1}`;
+      {/* Tabs Switcher - Matching Categories Page Design */}
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab("sanctions_log")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+            activeTab === "sanctions_log"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 font-bold"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          }`}
+        >
+          Log &amp; Rekap Sanksi Siswa
+        </button>
+        <button
+          onClick={() => setActiveTab("threshold_rules")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+            activeTab === "threshold_rules"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 font-bold"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          }`}
+        >
+          Aturan Ambang Batas Sanksi
+        </button>
+      </div>
 
-              return (
-                <div 
-                  key={t.id || idx} 
-                  className={cn(
-                    "p-5 rounded-2xl border flex flex-col justify-between relative group transition-all duration-200 hover:shadow-md min-h-[140px]",
-                    style.card
-                  )}
-                >
-                  <div>
-                    {/* Header Row: Title on Left, Points Badge on Right */}
+      {/* ── TAB 1: LOG & REKAP SANKSI SISWA ── */}
+      {activeTab === "sanctions_log" && (
+        <div className="space-y-6">
+          {/* Radar Siswa Berisiko Tinggi (At-Risk Early Warning Radar) */}
+          <SectionCard 
+            title="Radar Siswa Berisiko Tinggi (At-Risk Early Warning)"
+            action={
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
+                Deteksi Dini Pembinaan BK
+              </span>
+            }
+          >
+            {loadingAtRisk ? (
+              <LoadingState message="Menganalisis siswa berisiko..." rows={2} />
+            ) : !atRiskData || atRiskData.length === 0 ? (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Tidak ada siswa yang terdeteksi berisiko tinggi saat ini. Seluruh siswa dalam batas aman.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {atRiskData.map((item: any, idx: number) => (
+                  <div 
+                    key={item.studentId || idx}
+                    className="p-4 rounded-2xl border bg-card hover:bg-accent/40 border-amber-500/30 dark:border-amber-700/40 shadow-sm transition-all space-y-3"
+                  >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className={cn("text-xs sm:text-sm uppercase font-extrabold leading-tight", style.title)}>
-                        {titleText}
-                      </h4>
-                      <span className={cn("shrink-0 font-black text-right whitespace-nowrap ml-2", style.points)}>
-                        {t.minPoints} Poin
+                      <div>
+                        <h4 className="font-extrabold text-sm text-foreground">{item.studentName}</h4>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{item.className} • NISN: {item.nisn}</p>
+                      </div>
+                      <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap">
+                        {item.cumulativePoints} Poin
                       </span>
                     </div>
 
-                    {/* Middle Body: Consequence / Description */}
-                    <p className={cn("mt-3 leading-relaxed", style.desc)}>
-                      {t.description || `Pemicu sanksi otomatis (${t.actionRequired}) saat poin akumulasi mencapai ${t.minPoints}.`}
-                    </p>
-                  </div>
+                    {/* Progress bar towards next sanction */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Sanksi Berikutnya: <strong className="text-foreground font-bold">{item.nextSanction}</strong></span>
+                        <span className="font-black text-amber-600 dark:text-amber-400">Sisa {item.pointsToNext} Poin</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/80 overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 rounded-full transition-all duration-500"
+                          style={{ width: `${item.progressPercentage}%` }}
+                        />
+                      </div>
+                    </div>
 
-                  {/* Footer Row: Edit and Delete action icons at bottom right */}
-                  <div className="mt-4 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                    {t.minPoints <= 15 ? (
+                    <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground text-[11px]">Sanksi Saat Ini: <strong className="text-foreground">{item.currentSanction}</strong></span>
                       <button
-                        onClick={() => {
-                          setLetterDocType("KARTU TUGAS PEMBINAAN SISWA");
-                          setPrintSanction({
-                            id: 999,
-                            studentId: 101,
-                            studentName: "Ahmad Rizky (Contoh Siswa)",
-                            nisn: "0081234567",
-                            className: "8-A",
-                            sanctionType: t.sanctionName || t.label || "PEMBINAAN_BK",
-                            cumulativePoints: t.minPoints,
-                            issuedDate: new Date().toISOString(),
-                            status: "ACTIVE",
-                            notes: t.description
-                          });
-                        }}
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-900 dark:text-amber-200 hover:bg-amber-500/30 transition-colors flex items-center gap-1 cursor-pointer"
-                        title="Lihat Format Slip Kartu Tugas Pembinaan"
+                        onClick={() => openCounselingModal(item)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                       >
-                        <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                        <span>Contoh Slip Kartu Tugas</span>
-                      </button>
-                    ) : <div />}
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => openEditModal(t)}
-                        className={cn("p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors", style.icon)}
-                        title="Edit Ambang Batas"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteThreshold(t)}
-                        className="p-1.5 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors"
-                        title="Hapus Ambang Batas"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        <UserCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>Jadwalkan BK</span>
                       </button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Radar Siswa Berisiko Tinggi (At-Risk Early Warning Radar) */}
-      <SectionCard 
-        title="Radar Siswa Berisiko Tinggi (At-Risk Early Warning)"
-        action={
-          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
-            Deteksi Dini Pembinaan BK
-          </span>
-        }
-      >
-        {loadingAtRisk ? (
-          <LoadingState message="Menganalisis siswa berisiko..." rows={2} />
-        ) : !atRiskData || atRiskData.length === 0 ? (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Tidak ada siswa yang terdeteksi berisiko tinggi saat ini. Seluruh siswa dalam batas aman.</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {atRiskData.map((item: any, idx: number) => (
-              <div 
-                key={item.studentId || idx}
-                className="p-4 rounded-2xl border bg-card hover:bg-accent/40 border-amber-500/30 dark:border-amber-700/40 shadow-sm transition-all space-y-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h4 className="font-extrabold text-sm text-foreground">{item.studentName}</h4>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{item.className} • NISN: {item.nisn}</p>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap">
-                    {item.cumulativePoints} Poin
-                  </span>
-                </div>
-
-                {/* Progress bar towards next sanction */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Sanksi Berikutnya: <strong className="text-foreground font-bold">{item.nextSanction}</strong></span>
-                    <span className="font-black text-amber-600 dark:text-amber-400">Sisa {item.pointsToNext} Poin</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-muted/80 overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 rounded-full transition-all duration-500"
-                      style={{ width: `${item.progressPercentage}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground text-[11px]">Sanksi Saat Ini: <strong className="text-foreground">{item.currentSanction}</strong></span>
-                  <button
-                    onClick={() => {
-                      toast.info(`Menjadwalkan konseling BK preventif untuk ${item.studentName}`);
-                    }}
-                    className="px-2.5 py-1 text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Konseling BK
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
+            )}
+          </SectionCard>
+
+          {/* Rekap Jadwal & Penugasan Pembinaan Siswa (1 Minggu Ke Depan) */}
+          <SectionCard 
+            title="Rekap Jadwal & Penugasan Pembinaan Siswa (1 Minggu Ke Depan)"
+            action={
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsPolsisModalOpen(true)}
+                  disabled={counselingSchedules.length === 0}
+                  className="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  title="Cetak Daftar Penugasan Resmi POLSIS & Pembina Lapangan"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak Rekap POLSIS</span>
+                </button>
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  {counselingSchedules.length} Sesi Terdaftar
+                </span>
+              </div>
+            }
+          >
+            {counselingSchedules.length === 0 ? (
+              <div className="p-4 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span>Belum ada jadwal penugasan pembinaan yang diterbitkan untuk minggu ini. Klik <strong>"Jadwalkan BK"</strong> pada siswa berisiko di atas untuk menambahkan jadwal baru.</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-muted/60 text-muted-foreground uppercase text-[10px] font-extrabold tracking-wider border-b border-border">
+                    <tr>
+                      <th className="py-3 px-3">Tanggal & Waktu</th>
+                      <th className="py-3 px-3">Siswa & Kelas</th>
+                      <th className="py-3 px-3">Jenis Penugasan Pembinaan</th>
+                      <th className="py-3 px-3">Pembina & Lokasi</th>
+                      <th className="py-3 px-3 text-center">Status Pelaksanaan</th>
+                      <th className="py-3 px-3 text-right">Cetak & Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60 bg-card">
+                    {counselingSchedules.map((cs) => (
+                      <tr key={cs.id} className="hover:bg-accent/30 transition-colors">
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-bold text-foreground">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>{typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "-"}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5 font-mono">
+                            <Clock className="w-3 h-3 shrink-0" />
+                            <span>{cs.time}</span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <div className="font-extrabold text-foreground">{cs.studentName}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            {cs.className} • <span className="font-bold text-amber-600 dark:text-amber-400">{cs.cumulativePoints} Poin</span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 inline-block">
+                            {cs.taskType || "Pembinaan BK Preventif"}
+                          </span>
+                          {cs.notes && (
+                            <p className="text-[11px] text-muted-foreground italic mt-1 line-clamp-1">
+                              "{cs.notes}"
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <div className="font-medium text-foreground flex items-center gap-1">
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{cs.counselorName}</span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{cs.location}</span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                          <select
+                            value={cs.status}
+                            onChange={(e) => handleUpdateCounselingStatus(cs.id, e.target.value)}
+                            className={cn(
+                              "px-2.5 py-1 text-xs font-extrabold rounded-lg border transition-colors cursor-pointer outline-none shadow-sm",
+                              cs.status === "SUDAH" 
+                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 focus:ring-2 focus:ring-emerald-500" 
+                                : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 focus:ring-2 focus:ring-amber-500"
+                            )}
+                          >
+                            <option value="BELUM">🟡 BELUM Pelaksanaan</option>
+                            <option value="SUDAH">🟢 SUDAH Pelaksanaan</option>
+                          </select>
+                        </td>
+
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setLetterDocType(
+                                  (cs.cumulativePoints || 0) >= 10 
+                                    ? "KARTU TUGAS PEMBINAAN SISWA" 
+                                    : "SURAT PANGGILAN KONSELING BK"
+                                );
+                                setPrintSanction({
+                                  id: cs.id,
+                                  studentId: cs.studentId || 101,
+                                  studentName: cs.studentName,
+                                  nisn: cs.nisn,
+                                  className: cs.className,
+                                  sanctionType: cs.cumulativePoints >= 15 ? "TEGURAN_3" : cs.cumulativePoints >= 10 ? "TEGURAN_2" : "PEMBINAAN_BK",
+                                  cumulativePoints: cs.cumulativePoints,
+                                  issuedDate: cs.date,
+                                  status: cs.status,
+                                  notes: cs.notes
+                                });
+                              }}
+                              className="px-2.5 py-1 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                              title="Cetak Slip Kartu Tugas Pembinaan"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Cetak Slip</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCounselingSchedule(cs.id)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus Jadwal"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+        </div>
+      )}
+
+      {/* ── TAB 2: ATURAN AMBANG BATAS SANKSI ── */}
+      {activeTab === "threshold_rules" && (
+        <SectionCard 
+          title="Aturan Ambang Batas Sanksi Otomatis (Threshold Rules)"
+          action={
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tambah Ambang Batas
+            </button>
+          }
+        >
+          {loadingThresholds ? (
+            <LoadingState message="Memuat aturan ambang batas..." rows={2} />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {thresholds.map((t, idx) => {
+                const style = getSeverityStyle(t.minPoints);
+                const titleText = t.sanctionName || t.label || `Ambang ${idx + 1}`;
+
+                return (
+                  <div 
+                    key={t.id || idx} 
+                    className={cn(
+                      "p-5 rounded-2xl border flex flex-col justify-between relative group transition-all duration-200 hover:shadow-md min-h-[140px]",
+                      style.card
+                    )}
+                  >
+                    <div>
+                      {/* Header Row: Title on Left, Points Badge on Right */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className={cn("text-xs sm:text-sm uppercase font-extrabold leading-tight", style.title)}>
+                          {titleText}
+                        </h4>
+                        <span className={cn("shrink-0 font-black text-right whitespace-nowrap ml-2", style.points)}>
+                          {t.minPoints} Poin
+                        </span>
+                      </div>
+
+                      {/* Middle Body: Consequence / Description */}
+                      <p className={cn("mt-3 text-xs sm:text-sm leading-relaxed", style.desc)}>
+                        {t.description || `Pemicu sanksi otomatis (${t.actionRequired}) saat poin akumulasi mencapai ${t.minPoints}.`}
+                      </p>
+                    </div>
+
+                    {/* Footer Row: Edit and Delete action icons */}
+                    <div className="mt-4 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                      {t.minPoints <= 15 ? (
+                        <button
+                          onClick={() => {
+                            setLetterDocType("KARTU TUGAS PEMBINAAN SISWA");
+                            setPrintSanction({
+                              id: 999,
+                              studentId: 101,
+                              studentName: "Ahmad Rizky (Contoh Siswa)",
+                              nisn: "0081234567",
+                              className: "8-A",
+                              sanctionType: t.sanctionName || t.label || "PEMBINAAN_BK",
+                              cumulativePoints: t.minPoints,
+                              issuedDate: new Date().toISOString(),
+                              status: "ACTIVE",
+                              notes: t.description
+                            });
+                          }}
+                          className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-900 dark:text-amber-200 hover:bg-amber-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Lihat Format Slip Kartu Tugas Pembinaan"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Contoh Slip Kartu Tugas</span>
+                        </button>
+                      ) : <div />}
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(t)}
+                          className={cn("p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors", style.icon)}
+                          title="Edit Ambang Batas"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteThreshold(t)}
+                          className="p-1.5 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg transition-colors"
+                          title="Hapus Ambang Batas"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+      )}
 
       {/* Explanation Banner regarding duplicated names */}
       <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl text-xs text-blue-800 dark:text-blue-300">
@@ -751,6 +1156,14 @@ export default function DisciplineSanctionsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openCounselingModal(s)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 transition-colors cursor-pointer"
+                          title="Jadwalkan Konseling BK"
+                        >
+                          <UserCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          <span>Jadwalkan BK</span>
+                        </button>
                         <button
                           onClick={async () => {
                             try {
@@ -959,6 +1372,120 @@ export default function DisciplineSanctionsPage() {
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   )}
                   {editingThreshold ? "Simpan Perubahan" : "Tambah Ambang Batas"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL PENJADWALAN KONSELING BK PREVENTIF ===== */}
+      {isCounselingModalOpen && counselingTargetStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="text-base font-bold flex items-center gap-2 text-foreground">
+                <UserCheck className="w-5 h-5 text-amber-600" />
+                Penjadwalan Konseling BK Preventif
+              </h3>
+              <button
+                onClick={() => setIsCounselingModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Modal */}
+            <form onSubmit={handleSaveCounselingSchedule} className="p-6 space-y-4 text-sm">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <p className="text-xs text-amber-900 dark:text-amber-200 font-extrabold">
+                  {counselingTargetStudent.studentName || counselingTargetStudent.name || "Siswa"}
+                </p>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                  Kelas: {counselingTargetStudent.className || "Kelas"} • Akumulasi Poin: <strong className="font-black text-rose-600">{counselingTargetStudent.cumulativePoints || counselingTargetStudent.totalPoints || 0} Poin</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Tanggal Konseling <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={counselingForm.date}
+                  onChange={(e) => setCounselingForm({ ...counselingForm, date: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Waktu / Jam Konseling <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={counselingForm.time}
+                  onChange={(e) => setCounselingForm({ ...counselingForm, time: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Lokasi / Ruangan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={counselingForm.location}
+                  onChange={(e) => setCounselingForm({ ...counselingForm, location: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Konselor / Guru BK Penanggung Jawab <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={counselingForm.counselorName}
+                  onChange={(e) => setCounselingForm({ ...counselingForm, counselorName: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Agenda / Catatan Pembinaan
+                </label>
+                <textarea
+                  rows={3}
+                  value={counselingForm.notes}
+                  onChange={(e) => setCounselingForm({ ...counselingForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-foreground resize-none"
+                />
+              </div>
+
+              {/* Footer Modal */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsCounselingModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg border border-border hover:bg-muted text-foreground transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  Simpan & Terbitkan Jadwal
                 </button>
               </div>
             </form>
@@ -1298,18 +1825,61 @@ export default function DisciplineSanctionsPage() {
                     )}
                   </div>
 
-                  {/* Point Accumulation & Guidance Note - Clean Borderless Callout */}
-                  <div className="py-2.5 px-3.5 mb-6">
-                    <div className="flex items-center justify-between font-bold text-black border-b border-black pb-1 mb-1">
-                      <span>TOTAL AKUMULASI POIN KEDISIPLINAN KESELURUHAN:</span>
-                      <span className="text-sm text-black font-extrabold">{semesterPointsSum} POIN</span>
+                  {/* Point Accumulation & Guidance Note / Restorative Task Card */}
+                  {letterDocType === "KARTU TUGAS PEMBINAAN SISWA" ? (
+                    <div className="border-2 border-black p-4 mb-6 rounded-lg font-sans">
+                      <h4 className="text-xs font-black uppercase text-center border-b border-black pb-2 mb-3">
+                        LEMBAR PENUGASAN RESTORATIF KARAKTER SISWA
+                      </h4>
+                      <table className="w-full text-xs border-collapse mb-3">
+                        <tbody>
+                          <tr>
+                            <td className="py-1 font-bold w-44">Jenis Penugasan:</td>
+                            <td className="py-1 font-extrabold text-black">
+                              {(printSanction.cumulativePoints || semesterPointsSum) >= 15 
+                                ? "Melakukan Pembinaan Murid untuk Menjadi Pembuat Teks & Petugas Kultum"
+                                : "Melakukan Pembinaan Murid untuk Menjadi Inspektur / Petugas Apel"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 font-bold">Waktu & Tanggal Tugas:</td>
+                            <td className="py-1 font-medium">Senin / Jumat Mendatang (Saat Upacara Bendera / Kultum Keagamaan)</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 font-bold">Lokasi Pelaksanaan:</td>
+                            <td className="py-1 font-medium">Lapangan Utama Upacara / Masjid Sekolah</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 font-bold">Guru Pembimbing / Penilai:</td>
+                            <td className="py-1 font-medium">Pembina OSIS / Guru PAI / Tim Bimbingan Konseling (BK)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <div className="bg-slate-50 p-3 border border-slate-300 rounded-md text-[10.5pt] space-y-1.5">
+                        <p className="font-bold text-black">Hasil Verifikasi & Evaluasi Pembina Lapangan:</p>
+                        <div className="flex items-center gap-6 text-[10pt] font-semibold text-black py-1">
+                          <span>[ &nbsp; ] Terlaksana Khidmat & Baik</span>
+                          <span>[ &nbsp; ] Perlu Pembinaan Ulang</span>
+                        </div>
+                        <p className="text-[9.5pt] italic text-black pt-1">
+                          Catatan Pembina: ........................................................................................................................................................
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-black leading-relaxed">
-                      <strong>Catatan Pembinaan Tim BK:</strong> Siswa yang bersangkutan telah menembus batas ambang poin 
-                      sanksi (<strong>{printSanction.sanctionType ? printSanction.sanctionType.replace(/_/g, " ") : "PEMBINAAN BK"}</strong>). Diharapkan Orang Tua/Wali Siswa 
-                      dapat bekerja sama mendampingi pembinaan kedisiplinan siswa di rumah serta menghadiri sesi konseling di sekolah.
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="py-2.5 px-3.5 mb-6">
+                      <div className="flex items-center justify-between font-bold text-black border-b border-black pb-1 mb-1">
+                        <span>TOTAL AKUMULASI POIN KEDISIPLINAN KESELURUHAN:</span>
+                        <span className="text-sm text-black font-extrabold">{semesterPointsSum} POIN</span>
+                      </div>
+                      <p className="text-[11px] text-black leading-relaxed">
+                        <strong>Catatan Pembinaan Tim BK:</strong> Siswa yang bersangkutan telah menembus batas ambang poin 
+                        sanksi (<strong>{printSanction.sanctionType ? printSanction.sanctionType.replace(/_/g, " ") : "PEMBINAAN BK"}</strong>). Diharapkan Orang Tua/Wali Siswa 
+                        dapat bekerja sama mendampingi pembinaan kedisiplinan siswa di rumah serta menghadiri sesi konseling di sekolah.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Official 3-Column Signature Footer (Proportional Table Format) */}
                   <table className="w-full text-center text-[12px] text-black font-sans mt-8 print:mt-8 border-collapse">
@@ -1346,6 +1916,187 @@ export default function DisciplineSanctionsPage() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal Dialog Cetak Rekapitulasi Penugasan POLSIS */}
+      {isPolsisModalOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity" 
+            onClick={() => setIsPolsisModalOpen(false)} 
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+            <div 
+              className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header Controls */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 text-indigo-600 rounded-xl">
+                    <Printer className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-foreground">
+                      Cetak Rekap Penugasan POLSIS & Pembina Lapangan
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Dokumen resmi serah terima jadwal Inspektur Apel & Petugas Kultum untuk POLSIS.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintPolsisRoster}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak Dokumen POLSIS</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsPolsisModalOpen(false)}
+                    className="p-2 text-muted-foreground hover:bg-accent rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body Preview Area */}
+              <div className="p-6 overflow-y-auto bg-slate-100 dark:bg-slate-900/50 flex-1">
+                <div 
+                  id="printable-polsis-roster-content" 
+                  className="bg-white text-black p-8 rounded-xl shadow-lg max-w-[210mm] mx-auto border font-sans text-xs"
+                >
+                  {/* Kop Surat Header */}
+                  <div className="border-b-4 border-double border-black pb-4 mb-6">
+                    <div className="flex items-center gap-4">
+                      {school?.logoUrl ? (
+                        <img src={school.logoUrl} alt="Logo Sekolah" className="w-20 h-20 object-contain shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 bg-slate-200 rounded-lg flex items-center justify-center font-bold text-slate-700 text-xl shrink-0">
+                          LOG
+                        </div>
+                      )}
+                      <div className="flex-1 text-center font-sans text-black">
+                        <h2 className="font-black text-lg uppercase tracking-wide text-black">
+                          {school?.name || "SMP ISLAM TERPADU AL-USWAH SIDOARJO"}
+                        </h2>
+                        <p className="text-[11px] font-medium leading-snug text-black">
+                          {school?.address || "Jl. Sugihwaras, Candi, Kabupaten Sidoarjo, Jawa Timur 61271"}
+                        </p>
+                        <p className="text-[10px] text-black">
+                          Telp/Fax: {school?.phone || "(031) 807-1234"} • Email: {school?.email || "info@aluswahsidoarjo.sch.id"} • Web: {school?.website || "www.aluswahsidoarjo.sch.id"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Document Title Header */}
+                  <div className="text-center mb-6">
+                    <h3 className="font-black text-sm uppercase underline text-black tracking-wide">
+                      DAFTAR PENUGASAN PEMBINAAN KEDISIPLINAN SISWA
+                    </h3>
+                    <p className="font-bold text-[11px] text-black uppercase mt-0.5">
+                      REKAPITULASI UNTUK POLISI SISWA (POLSIS) & PEMBINA LAPANGAN
+                    </p>
+                    <p className="text-[10px] text-black italic mt-1">
+                      Periode Tugas: {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  </div>
+
+                  {/* Context Note */}
+                  <div className="mb-4 p-3 border border-black rounded-lg bg-gray-50 text-[11px] leading-relaxed">
+                    <p className="font-semibold text-black">
+                      Keterangan Resmi untuk Petugas POLSIS & Pembina Lapangan:
+                    </p>
+                    <p className="text-black mt-0.5">
+                      Daftar nama siswa di bawah ini wajib melaksanakan tugas pembinaan kedisiplinan (Inspektur Apel / Pembuat Teks & Petugas Kultum) pada waktu dan tempat yang telah ditentukan. Petugas POLSIS wajib memverifikasi kehadiran & pelaksanaan tugas di lapangan serta memberi paraf pada lembar kontrol ini.
+                    </p>
+                  </div>
+
+                  {/* Roster Table */}
+                  <table className="w-full border-collapse border border-black text-[11px] text-black my-4">
+                    <thead>
+                      <tr className="bg-gray-200 text-black font-extrabold uppercase text-[10px]">
+                        <th className="border border-black px-2 py-2 text-center w-8">No</th>
+                        <th className="border border-black px-2 py-2 text-left w-28">Tanggal & Waktu</th>
+                        <th className="border border-black px-2 py-2 text-left">Nama Siswa & Kelas</th>
+                        <th className="border border-black px-2 py-2 text-center w-16">Poin</th>
+                        <th className="border border-black px-2 py-2 text-left">Jenis Tugas Pembinaan</th>
+                        <th className="border border-black px-2 py-2 text-left">Lokasi & Pembina</th>
+                        <th className="border border-black px-2 py-2 text-center w-24">Paraf POLSIS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {counselingSchedules.map((cs, idx) => (
+                        <tr key={cs.id || idx} className="border-b border-black">
+                          <td className="border border-black px-2 py-2 text-center font-bold">{idx + 1}</td>
+                          <td className="border border-black px-2 py-2 whitespace-nowrap">
+                            <div className="font-bold">{typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "-"}</div>
+                            <div className="text-[10px] text-gray-700 font-mono">{cs.time}</div>
+                          </td>
+                          <td className="border border-black px-2 py-2">
+                            <div className="font-black text-black">{cs.studentName}</div>
+                            <div className="text-[10px] text-gray-700 font-mono">NISN: {cs.nisn || "-"} • Kelas: {cs.className}</div>
+                          </td>
+                          <td className="border border-black px-2 py-2 text-center font-bold text-black">{cs.cumulativePoints} Poin</td>
+                          <td className="border border-black px-2 py-2 font-bold">{cs.taskType || "Pembinaan Kedisiplinan"}</td>
+                          <td className="border border-black px-2 py-2">
+                            <div className="font-semibold">{cs.counselorName}</div>
+                            <div className="text-[10px] text-gray-700">{cs.location}</div>
+                          </td>
+                          <td className="border border-black px-2 py-2 text-center align-middle">
+                            <div className="text-[9px] text-gray-500 border border-dashed border-black/40 rounded py-1 px-1">
+                              [  ] SUDAH<br />
+                              <span className="font-mono text-[8px]">Paraf: _______</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* 3-Column Official Signature Footer */}
+                  <table className="w-full text-center text-[11px] text-black font-sans mt-8 border-collapse">
+                    <tbody>
+                      <tr>
+                        <td className="w-1/3 vertical-top px-2">
+                          <p className="font-semibold text-black">Mengetahui,</p>
+                          <p className="font-bold text-black">Wakasek Kesiswaan,</p>
+                          <div className="h-16" />
+                          <p className="font-bold underline text-black">( .................................................... )</p>
+                          <p className="text-[10px] text-black mt-0.5">NIP / NPY.</p>
+                        </td>
+
+                        <td className="w-1/3 vertical-top px-2">
+                          <p className="font-semibold text-black">Diserahkan Oleh,</p>
+                          <p className="font-bold text-black">Guru Bimbingan Konseling (BK),</p>
+                          <div className="h-16" />
+                          <p className="font-bold underline text-black">( .................................................... )</p>
+                          <p className="text-[10px] text-black mt-0.5">Guru BK & Kesiswaan</p>
+                        </td>
+
+                        <td className="w-1/3 vertical-top px-2">
+                          <p className="font-semibold text-black">
+                            Sidoarjo, {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                          </p>
+                          <p className="font-bold text-black">Diterima Oleh POLSIS / Pembina,</p>
+                          <div className="h-16" />
+                          <p className="font-bold underline text-black">( .................................................... )</p>
+                          <p className="text-[10px] text-black mt-0.5">Koordinator POLSIS / Pembina</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </div>
+              </div>
             </div>
           </div>
         </>
