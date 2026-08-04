@@ -602,14 +602,34 @@ export default function DisciplineSanctionsPage() {
     queryKey: ["classes-list"],
     queryFn: async () => {
       try {
-        const res = await classesService.getClasses();
-        return Array.isArray(res) ? res : res?.data || [];
+        const res = await classesService.getAll({ limit: 500 });
+        return Array.isArray(res) ? res : (res as any)?.data || [];
       } catch {
         return [];
       }
     }
   });
-  const classesList = Array.isArray(classesData) ? classesData : [];
+
+  // Extract unique class names dynamically from classes, at-risk, and counseling data
+  const uniqueClassNames = useMemo(() => {
+    const set = new Set<string>();
+    if (Array.isArray(classesData)) {
+      classesData.forEach((c: any) => {
+        if (c.name) set.add(String(c.name).trim());
+      });
+    }
+    if (Array.isArray(atRiskData)) {
+      atRiskData.forEach((item: any) => {
+        if (item.className && item.className !== "-") set.add(String(item.className).trim());
+      });
+    }
+    if (Array.isArray(counselingSchedules)) {
+      counselingSchedules.forEach((cs: any) => {
+        if (cs.className && cs.className !== "-") set.add(String(cs.className).trim());
+      });
+    }
+    return Array.from(set).sort();
+  }, [classesData, atRiskData, counselingSchedules]);
 
   // Filtered At-Risk Data
   const filteredAtRiskData = useMemo(() => {
@@ -621,7 +641,9 @@ export default function DisciplineSanctionsPage() {
         (item.nisn && item.nisn.toLowerCase().includes(q)) ||
         (item.className && item.className.toLowerCase().includes(q));
       
-      const matchClass = selectedClassId === "ALL" || String(item.classId) === String(selectedClassId) || (item.className && item.className.toLowerCase().includes(selectedClassId.toLowerCase()));
+      const matchClass = selectedClassId === "ALL" || 
+        (item.className && item.className.toLowerCase().trim() === selectedClassId.toLowerCase().trim()) ||
+        (item.classId && String(item.classId) === String(selectedClassId));
       
       return matchSearch && matchClass;
     });
@@ -643,7 +665,10 @@ export default function DisciplineSanctionsPage() {
         (cs.className && cs.className.toLowerCase().includes(q)) ||
         (cs.taskType && cs.taskType.toLowerCase().includes(q));
       
-      const matchClass = selectedClassId === "ALL" || String(cs.classId) === String(selectedClassId) || (cs.className && cs.className.toLowerCase().includes(selectedClassId.toLowerCase()));
+      const matchClass = selectedClassId === "ALL" || 
+        (cs.className && cs.className.toLowerCase().trim() === selectedClassId.toLowerCase().trim()) ||
+        (cs.classId && String(cs.classId) === String(selectedClassId));
+
       const matchStatus = selectedStatus === "ALL" || cs.status === selectedStatus;
 
       return matchSearch && matchClass && matchStatus;
@@ -855,11 +880,11 @@ export default function DisciplineSanctionsPage() {
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 >
                   <option value="ALL">🏫 Semua Kelas</option>
-                  {classesList.map((c: any) => (
-                    <option key={c.id} value={c.name || c.id}>{c.name || c.className}</option>
+                  {uniqueClassNames.map((clsName) => (
+                    <option key={clsName} value={clsName}>Kelas {clsName}</option>
                   ))}
                 </select>
               </div>
