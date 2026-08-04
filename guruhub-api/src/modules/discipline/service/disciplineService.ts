@@ -710,7 +710,7 @@ export class DisciplineService {
               location: "Masjid Sekolah",
               counselorName: "Guru PAI / Pembina Keagamaan",
               notes: "Auto System: Siswa terdata 15 Poin - Tugas pembinaan membuat teks & membaca kultum keagamaan.",
-              status: "BELUM",
+              status: "BELUM" as const,
               cumulativePoints: pts,
             };
             const insertId = await this.repository.createCounselingSchedule(schoolId, newSchedule);
@@ -735,7 +735,7 @@ export class DisciplineService {
               location: "Lapangan Utama Upacara",
               counselorName: "Pembina Upacara / Tim Kesiswaan",
               notes: "Auto System: Siswa terdata 10 Poin - Tugas pembinaan karakter menjadi Inspektur / Petugas Apel.",
-              status: "BELUM",
+              status: "BELUM" as const,
               cumulativePoints: pts,
             };
             const insertId = await this.repository.createCounselingSchedule(schoolId, newSchedule);
