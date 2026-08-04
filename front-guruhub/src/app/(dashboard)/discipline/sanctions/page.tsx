@@ -595,6 +595,7 @@ export default function DisciplineSanctionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClassId, setSelectedClassId] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedTaskType, setSelectedTaskType] = useState<string>("ALL");
   const [pointsSortOrder, setPointsSortOrder] = useState<"DESC" | "ASC">("DESC");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -673,11 +674,14 @@ export default function DisciplineSanctionsPage() {
 
       const matchStatus = selectedStatus === "ALL" || cs.status === selectedStatus;
 
+      const matchTaskType = selectedTaskType === "ALL" ||
+        (cs.taskType && cs.taskType.toLowerCase().includes(selectedTaskType.toLowerCase().trim()));
+
       const csDateStr = typeof cs.date === "string" ? cs.date.split("T")[0] : cs.date ? new Date(cs.date).toISOString().split("T")[0] : "";
       const matchStart = !startDate || (csDateStr && csDateStr >= startDate);
       const matchEnd = !endDate || (csDateStr && csDateStr <= endDate);
 
-      return matchSearch && matchClass && matchStatus && matchStart && matchEnd;
+      return matchSearch && matchClass && matchStatus && matchTaskType && matchStart && matchEnd;
     });
 
     return list.sort((a: any, b: any) => {
@@ -685,7 +689,7 @@ export default function DisciplineSanctionsPage() {
       const pB = Number(b.cumulativePoints || 0);
       return pointsSortOrder === "ASC" ? pA - pB : pB - pA;
     });
-  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, pointsSortOrder, startDate, endDate]);
+  }, [counselingSchedules, searchQuery, selectedClassId, selectedStatus, selectedTaskType, pointsSortOrder, startDate, endDate]);
 
   const rawThresholds = Array.isArray(thresholdsData) ? thresholdsData : thresholdsData?.data || [];
   
@@ -906,6 +910,17 @@ export default function DisciplineSanctionsPage() {
                 <option value="SUDAH">🟢 SUDAH Pelaksanaan</option>
               </select>
 
+              {/* Filter Jenis Penugasan Pembinaan */}
+              <select
+                value={selectedTaskType}
+                onChange={(e) => setSelectedTaskType(e.target.value)}
+                className="px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="ALL">🎯 Semua Jenis Penugasan</option>
+                <option value="Inspektur / Petugas Apel">🎙️ Inspektur / Petugas Apel (10 Poin)</option>
+                <option value="Pembuat Teks & Petugas Kultum">📖 Pembuat Teks & Petugas Kultum (15 Poin)</option>
+              </select>
+
               {/* Sort Order Poin */}
               <select
                 value={pointsSortOrder}
@@ -937,12 +952,13 @@ export default function DisciplineSanctionsPage() {
               </div>
             </div>
 
-            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || pointsSortOrder !== "DESC" || startDate || endDate) && (
+            {(searchQuery || selectedClassId !== "ALL" || selectedStatus !== "ALL" || selectedTaskType !== "ALL" || pointsSortOrder !== "DESC" || startDate || endDate) && (
               <button
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedClassId("ALL");
                   setSelectedStatus("ALL");
+                  setSelectedTaskType("ALL");
                   setPointsSortOrder("DESC");
                   setStartDate("");
                   setEndDate("");
@@ -2202,6 +2218,7 @@ export default function DisciplineSanctionsPage() {
                       Periode Tugas: {startDate ? startDate : "Semua Tanggal"} {endDate ? ` s/d ${endDate}` : ""}
                       {selectedClassId !== "ALL" ? ` • Kelas: ${selectedClassId}` : ""}
                       {selectedStatus !== "ALL" ? ` • Status: ${selectedStatus}` : ""}
+                      {selectedTaskType !== "ALL" ? ` • Tugas: ${selectedTaskType}` : ""}
                       {searchQuery ? ` • Kata Kunci: "${searchQuery}"` : ""}
                     </p>
                   </div>
