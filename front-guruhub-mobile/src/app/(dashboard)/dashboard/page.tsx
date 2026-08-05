@@ -244,9 +244,12 @@ export default function MobileDashboard() {
     }
   };
 
+  const currentUserId = currentUser?.id;
+  const currentUserEmail = currentUser?.email;
+
   useEffect(() => {
     fetchData();
-  }, [currentUser]);
+  }, [currentUserId, currentUserEmail]);
 
   if (loading) {
     return (

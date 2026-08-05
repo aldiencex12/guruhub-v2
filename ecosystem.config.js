@@ -16,8 +16,9 @@ module.exports = {
       name: "front-guruhub",
       cwd: "./front-guruhub",
       script: "npm",
-      args: "run dev",
+      args: "start",
       env: {
+        NODE_ENV: "production",
         PORT: 3001
       }
     },
@@ -25,8 +26,9 @@ module.exports = {
       name: "front-guruhub-mobile",
       cwd: "./front-guruhub-mobile",
       script: "npm",
-      args: "run dev",
+      args: "start",
       env: {
+        NODE_ENV: "production",
         PORT: 3002
       }
     }
