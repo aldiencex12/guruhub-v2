@@ -79,11 +79,15 @@ export const disciplineController = {
   },
 
   getIncidents: async ({ schoolId, query }: any) => {
-    // Merge default pagination (default limit 500 unless specified)
     const filters = {
-      page: 1,
+      page: query?.page ? parseInt(query.page, 10) : 1,
       limit: query?.limit ? parseInt(query.limit, 10) : 500,
-      ...query
+      studentId: query?.studentId ? parseInt(query.studentId, 10) : undefined,
+      classId: query?.classId ? parseInt(query.classId, 10) : undefined,
+      academicYearId: query?.academicYearId ? parseInt(query.academicYearId, 10) : undefined,
+      status: query?.status || undefined,
+      startDate: query?.startDate || undefined,
+      endDate: query?.endDate || undefined,
     };
     
     const result = await service.getIncidents(schoolId, filters);

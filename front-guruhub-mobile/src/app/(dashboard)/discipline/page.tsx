@@ -134,6 +134,23 @@ export default function BKDisciplinePage() {
           mySans = ensureArray(sanRes);
         }
 
+        if (myIncs.length === 0) {
+          const allIncRes = await disciplineService.getIncidents({ limit: 500 }).catch(() => ({ data: [] }));
+          const rawIncidents = ensureArray(allIncRes);
+          const cleanStName = (matched?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+          if (cleanStName.length >= 3) {
+            myIncs = rawIncidents.filter((i: any) => {
+              const incStudentId = i.studentId || i.student_id;
+              const incStudentName = (i.studentName || i.student_name || i.student?.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+              if (matched?.id && incStudentId && Number(incStudentId) === Number(matched.id)) return true;
+              if (incStudentName.length >= 3 && (incStudentName === cleanStName || incStudentName.includes(cleanStName) || cleanStName.includes(incStudentName))) return true;
+              return false;
+            });
+          }
+        }
+
         setStudentIncidents(myIncs);
         setStudentSanctions(mySans);
       } else {

@@ -266,8 +266,8 @@ export class DisciplineRepository {
       isNull(disciplineIncidents.deletedAt),
       filters.status ? eq(disciplineIncidents.status, filters.status as any) : undefined,
       filters.reporterUserId ? eq(disciplineIncidents.reporterUserId, filters.reporterUserId) : undefined,
-      filters.studentId ? eq(disciplineIncidentStudents.studentId, filters.studentId) : undefined,
-      filters.classId ? eq(disciplineIncidentStudents.classId, filters.classId) : undefined,
+      filters.studentId ? eq(disciplineIncidentStudents.studentId, Number(filters.studentId)) : undefined,
+      filters.classId ? eq(disciplineIncidentStudents.classId, Number(filters.classId)) : undefined,
       filters.startDate ? gte(disciplineIncidents.incidentDate, new Date(filters.startDate)) : undefined,
       filters.endDate ? lte(disciplineIncidents.incidentDate, new Date(filters.endDate)) : undefined
     );
