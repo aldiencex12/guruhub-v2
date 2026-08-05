@@ -78,6 +78,11 @@ export default function MobileDashboard() {
           if (currentUser.email && st.email && st.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()) return true;
           if (st.name && currentUser.name && st.name.toLowerCase().trim() === currentUser.name.toLowerCase().trim()) return true;
           if (st.nisn && currentUser.email && currentUser.email.includes(st.nisn)) return true;
+
+          const cleanEmailPrefix = currentUser.email ? currentUser.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+          const cleanStName = st.name ? st.name.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+          if (cleanEmailPrefix && cleanStName && (cleanEmailPrefix === cleanStName || cleanStName.includes(cleanEmailPrefix) || cleanEmailPrefix.includes(cleanStName))) return true;
+
           return false;
         });
 
@@ -241,7 +246,7 @@ export default function MobileDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   if (loading) {
     return (
