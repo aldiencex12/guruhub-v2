@@ -104,20 +104,6 @@ export default function MobileDashboard() {
           myIncidents = Array.isArray(studentIncRes) ? studentIncRes : (studentIncRes as any)?.data ?? [];
         }
 
-        if (myIncidents.length === 0) {
-          const rawIncidents = Array.isArray(incRes) ? incRes : (incRes as any)?.data ?? [];
-          const curCleanName = (matchedStudent?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-          myIncidents = rawIncidents.filter((i: any) => {
-            const incStudentId = i.studentId || i.student_id;
-            const incStudentName = (i.studentName || i.student_name || i.student?.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-            if (matchedStudent && incStudentId && Number(incStudentId) === Number(matchedStudent.id)) return true;
-            if (curCleanName && incStudentName && (incStudentName === curCleanName || incStudentName.includes(curCleanName) || curCleanName.includes(incStudentName))) return true;
-            return false;
-          });
-        }
-
         const totalPoints = myIncidents.reduce((sum: number, inc: any) => sum + Number(inc.points || inc.demeritPoints || inc.demerit_points || 0), 0);
         setStudentDemeritPoints(totalPoints);
         setStudentIncidentsList(myIncidents);
