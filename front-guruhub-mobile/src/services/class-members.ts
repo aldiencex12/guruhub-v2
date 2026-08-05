@@ -2,8 +2,8 @@ import { api } from "./api";
 import type { ClassMember, ApiResponse } from "@/types";
 
 export const classMembersService = {
-  getAll: async (params: { classId: number }): Promise<ClassMember[]> => {
-    let path = `/class-members/?classId=${params.classId}`;
+  getAll: async (params?: { classId?: number }): Promise<ClassMember[]> => {
+    let path = params?.classId ? `/class-members/?classId=${params.classId}` : `/class-members/`;
     const res: ApiResponse<ClassMember[]> = await api.get(path);
     return res.data;
   },

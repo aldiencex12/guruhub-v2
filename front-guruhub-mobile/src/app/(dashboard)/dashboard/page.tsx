@@ -11,6 +11,7 @@ import { teachersService } from "@/services/teachers";
 import { disciplineService } from "@/services/discipline";
 import { studentsService } from "@/services/students";
 import { attendanceService } from "@/services/attendance";
+import { classMembersService } from "@/services/class-members";
 import type { Schedule, DashboardSummary } from "@/types";
 import { ClipboardCheck, BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw, Users, Layers, ShieldAlert, FileWarning, AlertTriangle, Laptop, ExternalLink, Award, Sparkles, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -60,20 +61,22 @@ export default function MobileDashboard() {
     try {
       if (isStudent) {
         // Student Dashboard Data Fetching
-        const [studentsData, incRes, schedsData, classesData, subjectsData, teachersData] = await Promise.all([
+        const [studentsData, incRes, schedsData, classesData, subjectsData, teachersData, classMembersData] = await Promise.all([
           studentsService.getAll().catch(() => []),
           disciplineService.getIncidents({ limit: 500 }).catch(() => ({ data: [] })),
           schedulesService.getAll().catch(() => []),
           classesService.getAll().catch(() => []),
           subjectsService.getAll().catch(() => []),
           teachersService.getAll().catch(() => []),
+          classMembersService.getAll().catch(() => []),
         ]);
 
         const matchedStudent = studentsData.find((st: any) => {
           if (!currentUser) return false;
-          if (st.userId && currentUser.id && Number(st.userId) === Number(currentUser.id)) return true;
-          if (currentUser.email && st.email && st.email.toLowerCase() === currentUser.email.toLowerCase()) return true;
-          if (st.name && currentUser.name && st.name.toLowerCase() === currentUser.name.toLowerCase()) return true;
+          const stUserId = st.userId || st.user_id;
+          if (stUserId && currentUser.id && Number(stUserId) === Number(currentUser.id)) return true;
+          if (currentUser.email && st.email && st.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()) return true;
+          if (st.name && currentUser.name && st.name.toLowerCase().trim() === currentUser.name.toLowerCase().trim()) return true;
           if (st.nisn && currentUser.email && currentUser.email.includes(st.nisn)) return true;
           return false;
         });
@@ -81,20 +84,32 @@ export default function MobileDashboard() {
         const studentName = matchedStudent?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "Siswa";
         setGreetingName(studentName);
 
+        // Find student classId
+        const myClassMember = classMembersData.find((cm: any) => {
+          if (!matchedStudent) return false;
+          const cmStudentId = cm.studentId || cm.student_id;
+          return cmStudentId && Number(cmStudentId) === Number(matchedStudent.id);
+        });
+        const studentClassId = (matchedStudent as any)?.classId || (matchedStudent as any)?.class_id || (myClassMember as any)?.classId || (myClassMember as any)?.class_id;
+
         // Real Discipline Incidents
         const incidents = Array.isArray(incRes) ? incRes : (incRes as any)?.data ?? [];
         const myIncidents = incidents.filter((i: any) => {
-          if (matchedStudent && i.studentId === matchedStudent.id) return true;
-          if (matchedStudent && i.studentName && i.studentName.toLowerCase() === matchedStudent.name.toLowerCase()) return true;
-          if (currentUser?.name && i.studentName && i.studentName.toLowerCase() === currentUser.name.toLowerCase()) return true;
+          if (!matchedStudent && !currentUser) return false;
+          const incStudentId = i.studentId || i.student_id;
+          const incStudentName = (i.studentName || i.student_name || i.student?.name || "").toLowerCase().trim();
+          const curName = (matchedStudent?.name || currentUser?.name || "").toLowerCase().trim();
+
+          if (matchedStudent && incStudentId && Number(incStudentId) === Number(matchedStudent.id)) return true;
+          if (curName && incStudentName && (incStudentName === curName || incStudentName.includes(curName) || curName.includes(incStudentName))) return true;
           return false;
         });
 
-        const totalPoints = myIncidents.reduce((sum: number, inc: any) => sum + Number(inc.points || inc.demeritPoints || 0), 0);
+        const totalPoints = myIncidents.reduce((sum: number, inc: any) => sum + Number(inc.points || inc.demeritPoints || inc.demerit_points || 0), 0);
         setStudentDemeritPoints(totalPoints);
         setStudentIncidentsList(myIncidents);
 
-        // Schedules today
+        // Schedules today (Filtered by student's class if known)
         const enriched = schedsData.map((s) => ({
           ...s,
           class: classesData.find((c) => c.id === s.classId),
@@ -102,9 +117,11 @@ export default function MobileDashboard() {
           teacher: teachersData.find((t) => t.id === s.teacherId),
         }));
 
-        const todaySchedules = enriched.filter(
-          (s) => s.dayOfWeek.toLowerCase() === currentDay.toLowerCase()
-        );
+        const todaySchedules = enriched.filter((s) => {
+          const isToday = s.dayOfWeek.toLowerCase() === currentDay.toLowerCase();
+          const isMyClass = studentClassId ? Number(s.classId) === Number(studentClassId) : true;
+          return isToday && isMyClass;
+        });
         setSchedules(todaySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime)));
 
         // Real Attendance stats
@@ -126,12 +143,18 @@ export default function MobileDashboard() {
           fullAttList.forEach((att: any) => {
             if (Array.isArray(att.details)) {
               att.details.forEach((d: any) => {
+                const dStudentId = d.studentId || d.student_id;
+                const dStudentName = (d.studentName || d.student_name || "").toLowerCase().trim();
+                const curName = (matchedStudent?.name || currentUser?.name || "").toLowerCase().trim();
+
                 const isMyDetail = matchedStudent
-                  ? Number(d.studentId) === Number(matchedStudent.id) || (d.studentName && d.studentName.toLowerCase() === matchedStudent.name.toLowerCase())
-                  : (d.studentName && currentUser?.name && d.studentName.toLowerCase() === currentUser.name.toLowerCase());
+                  ? (dStudentId && Number(dStudentId) === Number(matchedStudent.id)) || (dStudentName && curName && dStudentName === curName)
+                  : (dStudentName && curName && dStudentName === curName);
+
                 if (isMyDetail) {
                   total++;
-                  if (d.status === "PRESENT") present++;
+                  const stUpper = String(d.status).toUpperCase();
+                  if (stUpper === "PRESENT" || stUpper === "HADIR") present++;
                 }
               });
             }
