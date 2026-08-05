@@ -282,6 +282,7 @@ export class DisciplineRepository {
       reporterName: sql<string>`COALESCE(MIN(${teachers.name}), MIN(${users.email}))`,
       reporterEmail: users.email,
       reporterRole: users.role,
+      studentId: disciplineIncidentStudents.studentId,
       studentsCount: sql<number>`count(distinct ${disciplineIncidentStudents.studentId})`,
       demeritPoints: sql<number>`COALESCE(SUM(${disciplineIncidentStudents.pointSnapshot}), 0)`,
       // First student name and class for list display
@@ -299,7 +300,7 @@ export class DisciplineRepository {
     .leftJoin(disciplineTypes, eq(disciplineIncidentStudents.disciplineTypeId, disciplineTypes.id))
     .leftJoin(disciplineCategories, eq(disciplineTypes.categoryId, disciplineCategories.id))
     .where(whereClause)
-    .groupBy(disciplineIncidents.id, users.email, users.role)
+    .groupBy(disciplineIncidents.id, users.email, users.role, disciplineIncidentStudents.studentId)
     .orderBy(desc(disciplineIncidents.incidentDate), desc(disciplineIncidents.id));
 
     const countQuery = db.select({ count: sql<number>`count(distinct ${disciplineIncidents.id})` })

@@ -32,7 +32,6 @@ const polsisNavItems: NavItem[] = [
 const studentNavItems: NavItem[] = [
   { label: "Beranda", href: "/dashboard", icon: Home },
   { label: "Ujian CBT", href: "/cbt", icon: Laptop },
-  { label: "Riwayat Presensi", href: "/attendance", icon: CalendarDays },
 ];
 
 export default function BottomNavigation() {

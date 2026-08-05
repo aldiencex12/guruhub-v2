@@ -98,17 +98,25 @@ export default function MobileDashboard() {
         const studentClassId = (matchedStudent as any)?.classId || (matchedStudent as any)?.class_id || (myClassMember as any)?.classId || (myClassMember as any)?.class_id;
 
         // Real Discipline Incidents
-        const incidents = Array.isArray(incRes) ? incRes : (incRes as any)?.data ?? [];
-        const myIncidents = incidents.filter((i: any) => {
-          if (!matchedStudent && !currentUser) return false;
-          const incStudentId = i.studentId || i.student_id;
-          const incStudentName = (i.studentName || i.student_name || i.student?.name || "").toLowerCase().trim();
-          const curName = (matchedStudent?.name || currentUser?.name || "").toLowerCase().trim();
+        let myIncidents: any[] = [];
+        if (matchedStudent?.id) {
+          const studentIncRes = await disciplineService.getIncidents({ studentId: Number(matchedStudent.id), limit: 500 }).catch(() => ({ data: [] }));
+          myIncidents = Array.isArray(studentIncRes) ? studentIncRes : (studentIncRes as any)?.data ?? [];
+        }
 
-          if (matchedStudent && incStudentId && Number(incStudentId) === Number(matchedStudent.id)) return true;
-          if (curName && incStudentName && (incStudentName === curName || incStudentName.includes(curName) || curName.includes(incStudentName))) return true;
-          return false;
-        });
+        if (myIncidents.length === 0) {
+          const rawIncidents = Array.isArray(incRes) ? incRes : (incRes as any)?.data ?? [];
+          const curCleanName = (matchedStudent?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+          myIncidents = rawIncidents.filter((i: any) => {
+            const incStudentId = i.studentId || i.student_id;
+            const incStudentName = (i.studentName || i.student_name || i.student?.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+            if (matchedStudent && incStudentId && Number(incStudentId) === Number(matchedStudent.id)) return true;
+            if (curCleanName && incStudentName && (incStudentName === curCleanName || incStudentName.includes(curCleanName) || curCleanName.includes(incStudentName))) return true;
+            return false;
+          });
+        }
 
         const totalPoints = myIncidents.reduce((sum: number, inc: any) => sum + Number(inc.points || inc.demeritPoints || inc.demerit_points || 0), 0);
         setStudentDemeritPoints(totalPoints);
@@ -288,14 +296,10 @@ export default function MobileDashboard() {
             Selamat belajar! Hari ini adalah <span className="font-semibold text-white">{currentDateStr}</span>.
           </p>
 
-          <div className="grid grid-cols-2 gap-2 mt-5 pt-4 border-t border-white/10">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/10">
-              <div className="text-base font-black text-amber-300">{studentDemeritPoints} Poin</div>
-              <div className="text-[8px] text-sky-100 font-bold uppercase tracking-wider">Demerit Disiplin</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 text-center border border-white/10">
-              <div className="text-base font-black text-emerald-300">{studentAttendanceStats.percentage}</div>
-              <div className="text-[8px] text-sky-100 font-bold uppercase tracking-wider">Tingkat Kehadiran</div>
+          <div className="mt-5 pt-4 border-t border-white/10">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 text-center border border-white/10 flex items-center justify-between px-4">
+              <span className="text-xs text-sky-100 font-bold uppercase tracking-wider">Demerit Disiplin</span>
+              <span className="text-lg font-black text-amber-300">{studentDemeritPoints} Poin</span>
             </div>
           </div>
         </div>
