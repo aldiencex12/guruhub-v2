@@ -42,6 +42,7 @@ const ensureArray = (val: any): any[] => {
 export default function BKDisciplinePage() {
   const { currentUser } = useAuthStore();
   const isPolsisRole = currentUser?.role === "Polsis";
+  const isStudent = currentUser?.role === "Student";
   const [activeTab, setActiveTab] = useState<Tab>(isPolsisRole ? "polsis" : "incidents");
   const [incidents, setIncidents] = useState<any[]>([]);
   const [sanctions, setSanctions] = useState<any[]>([]);
@@ -52,6 +53,11 @@ export default function BKDisciplinePage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [updating, setUpdating] = useState<number | null>(null);
+
+  // Student specific state
+  const [studentIncidents, setStudentIncidents] = useState<any[]>([]);
+  const [studentSanctions, setStudentSanctions] = useState<any[]>([]);
+  const [studentInfo, setStudentInfo] = useState<any>(null);
 
   // POLSIS form state
   const [polsisClassId, setPolsisClassId] = useState("");
@@ -87,21 +93,63 @@ export default function BKDisciplinePage() {
     }
   }, [polsisClassId]);
 
+  useEffect(() => {
+    loadData();
+  }, [currentUser]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [cls, inc, san, ana, typ] = await Promise.all([
-        classesService.getAll().catch(() => []),
-        disciplineService.getIncidents({ limit: 50 }).catch(() => ({ data: [] })),
-        disciplineService.getSanctionLogs({ limit: 50 }).catch(() => ({ data: [] })),
-        disciplineService.getAnalytics().catch(() => null),
-        disciplineService.getTypes().catch(() => ({ data: [] })),
-      ]);
-      setClasses(ensureArray(cls));
-      setIncidents(ensureArray(inc));
-      setSanctions(ensureArray(san));
-      setAnalytics(ana?.data ?? ana);
-      setDisciplineTypesList(ensureArray(typ));
+      if (isStudent) {
+        const studentsRes = await studentsService.getAll().catch(() => []);
+        const allStudents = ensureArray(studentsRes);
+
+        const matched = allStudents.find((st: any) => {
+          if (!currentUser) return false;
+          const stUserId = st.userId || st.user_id;
+          if (stUserId && currentUser.id && Number(stUserId) === Number(currentUser.id)) return true;
+          if (currentUser.email && st.email && st.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()) return true;
+          if (st.name && currentUser.name && st.name.toLowerCase().trim() === currentUser.name.toLowerCase().trim()) return true;
+          if (st.nisn && currentUser.email && currentUser.email.includes(st.nisn)) return true;
+
+          const cleanEmailPrefix = currentUser.email ? currentUser.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+          const cleanStName = st.name ? st.name.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+          if (cleanEmailPrefix && cleanStName && (cleanEmailPrefix === cleanStName || cleanStName.includes(cleanEmailPrefix) || cleanEmailPrefix.includes(cleanStName))) return true;
+
+          return false;
+        });
+
+        setStudentInfo(matched || null);
+
+        let myIncs: any[] = [];
+        let mySans: any[] = [];
+
+        if (matched?.id) {
+          const [incRes, sanRes] = await Promise.all([
+            disciplineService.getIncidents({ studentId: Number(matched.id), limit: 500 }).catch(() => ({ data: [] })),
+            disciplineService.getSanctionLogs({ studentId: Number(matched.id), limit: 500 }).catch(() => ({ data: [] }))
+          ]);
+
+          myIncs = ensureArray(incRes);
+          mySans = ensureArray(sanRes);
+        }
+
+        setStudentIncidents(myIncs);
+        setStudentSanctions(mySans);
+      } else {
+        const [cls, inc, san, ana, typ] = await Promise.all([
+          classesService.getAll().catch(() => []),
+          disciplineService.getIncidents({ limit: 50 }).catch(() => ({ data: [] })),
+          disciplineService.getSanctionLogs({ limit: 50 }).catch(() => ({ data: [] })),
+          disciplineService.getAnalytics().catch(() => null),
+          disciplineService.getTypes().catch(() => ({ data: [] })),
+        ]);
+        setClasses(ensureArray(cls));
+        setIncidents(ensureArray(inc));
+        setSanctions(ensureArray(san));
+        setAnalytics(ana?.data ?? ana);
+        setDisciplineTypesList(ensureArray(typ));
+      }
     } catch (err) {
       toast.error("Gagal memuat data kedisiplinan");
     } finally {
@@ -246,6 +294,130 @@ export default function BKDisciplinePage() {
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-rose-500 border-t-transparent" />
         <span className="text-xs text-gray-500 dark:text-gray-400">Memuat data kedisiplinan...</span>
+      </div>
+    );
+  }
+
+  if (isStudent) {
+    const studentName = studentInfo?.name || currentUser?.name || currentUser?.email?.split("@")[0] || "Siswa";
+    const totalDemerit = studentIncidents.reduce((sum, i) => sum + Number(i.demeritPoints || i.pointSnapshot || i.points || 0), 0);
+    const statusText = totalDemerit === 0 ? "Siswa Teladan" : totalDemerit < 20 ? "Dalam Pembinaan" : "Perhatian Khusus (SP)";
+
+    return (
+      <div className="space-y-6 pb-20">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-br from-[#be123c] via-[#e11d48] to-[#9f1239] rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] uppercase font-black tracking-wider bg-white/15 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+              <ShieldAlert className="h-3.5 w-3.5 text-amber-300" />
+              Catatan Kedisiplinan Siswa
+            </span>
+            <button onClick={loadData} className="p-1 text-white/70 hover:text-white rounded-lg">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
+
+          <h2 className="text-xl font-black mt-3 tracking-tight">Halo, {studentName}!</h2>
+          <p className="text-xs text-rose-100 mt-1 leading-relaxed">
+            Berikut adalah rincian lengkap seluruh poin demerit dan catatan kedisiplinan kamu.
+          </p>
+
+          <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-white/10">
+            <div>
+              <div className="text-2xl font-black text-amber-300">{totalDemerit} Poin</div>
+              <div className="text-[9px] text-rose-100 font-bold uppercase tracking-wider">Total Demerit Disiplin</div>
+            </div>
+            <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full border shadow-sm ${
+              totalDemerit === 0
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/30"
+                : totalDemerit < 20
+                  ? "bg-amber-500/20 text-amber-300 border-amber-400/30"
+                  : "bg-rose-500/30 text-rose-200 border-rose-400/30"
+            }`}>
+              {statusText}
+            </span>
+          </div>
+        </div>
+
+        {/* List Pelanggaran */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <FileWarning className="h-4 w-4 text-rose-500" />
+              Rincian Catatan Pelanggaran ({studentIncidents.length})
+            </h3>
+          </div>
+
+          {loading ? (
+            <div className="p-8 text-center text-xs text-gray-400">Memuat catatan poin...</div>
+          ) : studentIncidents.length === 0 ? (
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center space-y-2">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full w-fit mx-auto">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white">Tidak Ada Catatan Pelanggaran</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
+                Selamat! Kamu belum memiliki catatan poin demerit. Pertahankan kedisiplinan dan prestasi positifmu di sekolah!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {studentIncidents.map((inc: any, idx: number) => {
+                const pts = Number(inc.demeritPoints || inc.pointSnapshot || inc.points || 0);
+                const rawDate = inc.incidentDate || inc.incident_date || inc.createdAt;
+                const dateStr = rawDate ? new Date(rawDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-";
+                const title = inc.typeName || inc.type_name || inc.categoryName || inc.category_name || inc.description || "Catatan Pelanggaran";
+                const desc = inc.description || inc.notes || "Catatan poin pelanggaran kedisiplinan tercatat oleh guru.";
+
+                return (
+                  <div key={inc.id || idx} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl shadow-sm space-y-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 flex-1">
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">{dateStr}</span>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-snug">{title}</h4>
+                      </div>
+                      <div className="bg-rose-600 text-white font-black text-xs px-3 py-1.5 rounded-xl shrink-0 shadow-sm">
+                        +{pts} Poin
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                      {desc}
+                    </p>
+
+                    {inc.reporterName && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500 pt-1">
+                        <Users className="h-3 w-3" />
+                        <span>Dilaporkan oleh: <strong className="text-gray-600 dark:text-gray-400">{inc.reporterName}</strong></span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* List Sanksi / Bimbingan jika ada */}
+        {studentSanctions.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5 px-1">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Catatan Bimbingan / Sanksi ({studentSanctions.length})
+            </h3>
+            <div className="space-y-2.5">
+              {studentSanctions.map((san: any, idx: number) => (
+                <div key={san.id || idx} className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-3.5 rounded-2xl text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-900 dark:text-amber-200">{san.sanctionType || san.label || "Bimbingan Kedisiplinan"}</span>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300">{san.status || "PENDING"}</span>
+                  </div>
+                  {san.notes && <p className="text-gray-600 dark:text-gray-400">{san.notes}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

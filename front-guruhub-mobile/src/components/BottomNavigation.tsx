@@ -31,6 +31,7 @@ const polsisNavItems: NavItem[] = [
 
 const studentNavItems: NavItem[] = [
   { label: "Beranda", href: "/dashboard", icon: Home },
+  { label: "Catatan Poin", href: "/discipline", icon: ShieldAlert },
   { label: "Ujian CBT", href: "/cbt", icon: Laptop },
 ];
 

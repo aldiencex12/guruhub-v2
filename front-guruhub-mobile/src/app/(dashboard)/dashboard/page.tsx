@@ -13,7 +13,7 @@ import { studentsService } from "@/services/students";
 import { attendanceService } from "@/services/attendance";
 import { classMembersService } from "@/services/class-members";
 import type { Schedule, DashboardSummary } from "@/types";
-import { ClipboardCheck, BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw, Users, Layers, ShieldAlert, FileWarning, AlertTriangle, Laptop, ExternalLink, Award, Sparkles, ShieldCheck } from "lucide-react";
+import { ClipboardCheck, BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw, Users, Layers, ShieldAlert, FileWarning, AlertTriangle, Laptop, ExternalLink, Award, Sparkles, ShieldCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { formatTime } from "@/lib/utils";
 
@@ -371,41 +371,19 @@ export default function MobileDashboard() {
             </div>
           </div>
 
-          {/* DETAIL RINCIAN POIN PELANGGARAN */}
+          {/* LINK MENU TERPISAH RINCIAN POIN PELANGGARAN */}
           {studentIncidentsList.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60 space-y-2">
-              <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                Rincian Pelanggaran Tercatat ({studentIncidentsList.length})
-              </span>
-              <div className="space-y-2">
-                {studentIncidentsList.map((inc: any, idx: number) => {
-                  const pts = Number(inc.demeritPoints || inc.pointSnapshot || inc.points || 0);
-                  const rawDate = inc.incidentDate || inc.incident_date || inc.createdAt;
-                  const dateStr = rawDate ? new Date(rawDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
-                  const title = inc.typeName || inc.type_name || inc.categoryName || inc.category_name || inc.description || "Catatan Pelanggaran";
-                  const desc = inc.description || inc.notes || "Catatan poin pelanggaran kedisiplinan tercatat.";
-
-                  return (
-                    <div key={inc.id || idx} className="bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 p-3 rounded-xl flex items-start justify-between gap-2.5 text-xs">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-rose-950 dark:text-rose-200 text-xs">{title}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-semibold">{dateStr}</span>
-                        </div>
-                        {desc && (
-                          <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-snug">{desc}</p>
-                        )}
-                        {inc.reporterName && (
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500 block">Pelapor: {inc.reporterName}</span>
-                        )}
-                      </div>
-                      <div className="bg-rose-600 text-white font-black text-xs px-2.5 py-1 rounded-lg shrink-0 shadow-sm">
-                        +{pts} Poin
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="mt-2 pt-2.5 border-t border-gray-100 dark:border-gray-800/60">
+              <Link
+                href="/discipline"
+                className="flex items-center justify-between w-full py-2.5 px-3.5 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl border border-rose-200/80 dark:border-rose-900/40 transition-all group"
+              >
+                <span className="flex items-center gap-1.5">
+                  <ShieldAlert className="h-4 w-4 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                  Lihat Rincian Catatan Poin ({studentIncidentsList.length})
+                </span>
+                <ChevronRight className="h-4 w-4 text-rose-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
           )}
         </div>
