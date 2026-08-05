@@ -147,6 +147,13 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
       }
     }
     
+    if (errorMessage.includes("Sekolah tidak ditemukan") || errorMessage.includes("tenant tidak valid")) {
+      store.logout();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+
     throw new ApiError(errorMessage, response.status, info);
   }
 

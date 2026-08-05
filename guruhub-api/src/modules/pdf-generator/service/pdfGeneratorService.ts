@@ -15,7 +15,7 @@ import { disciplineSanctionLogs, disciplineIncidents, disciplineIncidentStudents
 import { eq, and, isNull, sql, asc, desc } from "drizzle-orm";
 import puppeteer from "puppeteer";
 import { interimReportCards, interimReportCardSubjects } from "../../../schema/interimReportCards";
-import { InterimReportCardService } from "../../report-cards/service/interimReportCardService";
+import { InterimReportCardService, isAttendanceInSemester } from "../../report-cards/service/interimReportCardService";
 import {
   generateReportCardHtml,
   generateAttendanceReportHtml,
@@ -263,12 +263,12 @@ export class PdfGeneratorService {
       )
       .orderBy(students.name);
 
-    // Get attendance totals for these students in this semester/AY
-    const attendanceStats = await db
+    // Get attendance details for these students in this semester/AY
+    const attendanceRecords = await db
       .select({
         studentId: attendanceDetails.studentId,
         status: attendanceDetails.status,
-        count: sql<number>`count(*)`
+        attendanceDate: attendances.attendanceDate,
       })
       .from(attendanceDetails)
       .innerJoin(attendances, eq(attendanceDetails.attendanceId, attendances.id))
@@ -281,22 +281,21 @@ export class PdfGeneratorService {
           isNull(attendances.deletedAt),
           isNull(schedules.deletedAt)
         )
-      )
-      .groupBy(attendanceDetails.studentId, attendanceDetails.status);
+      );
 
     const statsMap: Record<number, { present: number; sick: number; permission: number; absent: number }> = {};
     for (const member of activeMembers) {
       statsMap[member.id] = { present: 0, sick: 0, permission: 0, absent: 0 };
     }
 
-    for (const stat of attendanceStats) {
-      const counts = statsMap[stat.studentId];
+    for (const rec of attendanceRecords) {
+      if (!isAttendanceInSemester(rec.attendanceDate, semester)) continue;
+      const counts = statsMap[rec.studentId];
       if (counts) {
-        const countVal = Number(stat.count);
-        if (stat.status === "PRESENT") counts.present = countVal;
-        else if (stat.status === "SICK") counts.sick = countVal;
-        else if (stat.status === "PERMISSION") counts.permission = countVal;
-        else if (stat.status === "ABSENT") counts.absent = countVal;
+        if (rec.status === "PRESENT") counts.present++;
+        else if (rec.status === "SICK") counts.sick++;
+        else if (rec.status === "PERMISSION") counts.permission++;
+        else if (rec.status === "ABSENT") counts.absent++;
       }
     }
 

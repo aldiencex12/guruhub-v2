@@ -220,11 +220,11 @@ describe("Modul Report Cards GuruHub - Clean Architecture, RBAC & Tenant Isolati
       });
     };
 
-    await insertAttendanceRecord("2026-06-01", "SICK");
-    await insertAttendanceRecord("2026-06-02", "SICK");
-    await insertAttendanceRecord("2026-06-03", "PERMISSION");
-    await insertAttendanceRecord("2026-06-04", "ABSENT");
-    await insertAttendanceRecord("2026-06-05", "PRESENT");
+    await insertAttendanceRecord("2026-07-01", "SICK");
+    await insertAttendanceRecord("2026-07-02", "SICK");
+    await insertAttendanceRecord("2026-07-03", "PERMISSION");
+    await insertAttendanceRecord("2026-07-04", "ABSENT");
+    await insertAttendanceRecord("2026-07-05", "PRESENT");
 
     // 10. Login tokens
     const fetchToken = async (schoolId: number, email: string) => {
@@ -626,7 +626,7 @@ describe("Modul Report Cards GuruHub - Clean Architecture, RBAC & Tenant Isolati
   // 21. RBAC: Principal diperbolehkan publish rapor
   it("21. RBAC: Principal diperbolehkan publish rapor", async () => {
     // Generate rapor baru untuk Siti
-    const student2Query = await db.select().from(students).where(eq(students.nis, "28002")).limit(1);
+    const student2Query = await db.select().from(students).where(eq(students.nisn, "0180000002")).limit(1);
     const rcList = await db.select().from(reportCards).where(eq(reportCards.studentId, student2Query[0].id)).limit(1);
 
     const res = await fetch(`http://localhost:3000/report-cards/${rcList[0].id}/publish`, {

@@ -132,6 +132,22 @@ export class DisciplineService {
     return await this.repository.getCategories(schoolId, filters || {});
   }
 
+  async createCategory(schoolId: number, data: any) {
+    const existing = await this.repository.getCategories(schoolId, { search: data.code });
+    if (existing.data.some((c: any) => c.code === data.code)) {
+      throw new ConflictError("Kode kategori disiplin sudah digunakan");
+    }
+    return await this.repository.createCategory(schoolId, data);
+  }
+
+  async updateCategory(schoolId: number, categoryId: number, data: any) {
+    return await this.repository.updateCategory(schoolId, categoryId, data);
+  }
+
+  async deleteCategory(schoolId: number, categoryId: number) {
+    return await this.repository.deleteCategory(schoolId, categoryId);
+  }
+
   // --- Types ---
   async getTypes(schoolId: number, filters?: { categoryId?: number; search?: string; page?: number; limit?: number }) {
     await this.ensureDefaults(schoolId);
@@ -659,6 +675,10 @@ export class DisciplineService {
 
   async getDemeritSummaryReport(schoolId: number, _filters?: any) {
     return await this.repository.getStudentDemeritSummaryReport(schoolId);
+  }
+
+  async getStudentDemeritSummaryReport(schoolId: number, filters?: any) {
+    return await this.getDemeritSummaryReport(schoolId, filters);
   }
 
   // --- Counseling Schedules / Restorative Tasks ---

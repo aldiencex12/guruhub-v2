@@ -395,12 +395,12 @@ describe("Modul Attendance GuruHub - Clean Architecture & Tenant Isolation", () 
     const createBody = await createRes.json();
     const targetId = createBody.data.id;
 
-    // Hapus
+    // Hapus (membutuhkan role Admin/Principal)
     const deleteRes = await fetch(`http://localhost:3000/attendances/${targetId}`, {
       method: "DELETE",
       headers: {
         "x-school-id": String(school1Id),
-        "Authorization": `Bearer ${teacher1Token}`,
+        "Authorization": `Bearer ${adminToken}`,
       },
     });
     expect(deleteRes.status).toBe(200);

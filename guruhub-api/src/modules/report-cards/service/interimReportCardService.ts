@@ -76,6 +76,28 @@ export function normalizeSubjectKey(name: string): string {
   return norm;
 }
 
+export function isAttendanceInSemester(attendanceDate: string | Date | null | undefined, semester: string): boolean {
+  if (!attendanceDate) return true;
+  const dateStr = typeof attendanceDate === "string" 
+    ? attendanceDate 
+    : attendanceDate instanceof Date 
+      ? attendanceDate.toISOString().slice(0, 10) 
+      : String(attendanceDate);
+
+  const parts = dateStr.split("-");
+  if (parts.length < 2) return true;
+  const month = parseInt(parts[1], 10);
+  if (isNaN(month)) return true;
+
+  const semUpper = (semester || "").toUpperCase().trim();
+  if (semUpper === "GANJIL" || semUpper === "1" || semUpper === "SEMESTER 1" || semUpper === "SEMESTER GANJIL") {
+    return month >= 7 && month <= 12;
+  } else if (semUpper === "GENAP" || semUpper === "2" || semUpper === "SEMESTER 2" || semUpper === "SEMESTER GENAP") {
+    return month >= 1 && month <= 6;
+  }
+  return true;
+}
+
 export class InterimReportCardService {
   /**
    * Mengambil atau membuat draf Raport Sisipan untuk siswa tertentu
@@ -131,9 +153,12 @@ export class InterimReportCardService {
       return this.getInterimReportCardDetails(schoolId, existing.id);
     }
 
-    // 4. Hitung absensi otomatis
+    // 4. Hitung absensi otomatis (filtered by semester)
     const studentAttendanceDetails = await db
-      .select({ status: attendanceDetails.status })
+      .select({
+        status: attendanceDetails.status,
+        attendanceDate: attendances.attendanceDate,
+      })
       .from(attendanceDetails)
       .innerJoin(attendances, eq(attendanceDetails.attendanceId, attendances.id))
       .innerJoin(schedules, eq(attendances.scheduleId, schedules.id))
@@ -147,6 +172,8 @@ export class InterimReportCardService {
 
     let sickCount = 0, permissionCount = 0, absentCount = 0;
     for (const att of studentAttendanceDetails) {
+      if (!isAttendanceInSemester(att.attendanceDate, semester)) continue;
+
       if (att.status === "SICK") sickCount++;
       else if (att.status === "PERMISSION") permissionCount++;
       else if (att.status === "ABSENT") absentCount++;
@@ -375,9 +402,12 @@ export class InterimReportCardService {
       );
     }
 
-    // Sinkronisasi absensi real-time dari tabel attendance_details
+    // Sinkronisasi absensi real-time dari tabel attendance_details (filtered by semester)
     const studentAttendanceDetails = await db
-      .select({ status: attendanceDetails.status })
+      .select({
+        status: attendanceDetails.status,
+        attendanceDate: attendances.attendanceDate,
+      })
       .from(attendanceDetails)
       .innerJoin(attendances, eq(attendanceDetails.attendanceId, attendances.id))
       .innerJoin(schedules, eq(attendances.scheduleId, schedules.id))
@@ -391,6 +421,8 @@ export class InterimReportCardService {
 
     let sickCount = 0, permissionCount = 0, absentCount = 0;
     for (const att of studentAttendanceDetails) {
+      if (!isAttendanceInSemester(att.attendanceDate, rc.semester)) continue;
+
       if (att.status === "SICK") sickCount++;
       else if (att.status === "PERMISSION") permissionCount++;
       else if (att.status === "ABSENT") absentCount++;

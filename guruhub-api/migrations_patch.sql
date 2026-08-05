@@ -1,7 +1,7 @@
 -- GuruHub v2 Database Schema Migration Patch for MariaDB
 -- Contains all discipline, interim report cards, assessment, attendance details, and master tables
 
-USE guruhub_db;
+-- USE guruhub_db;
 
 -- 1. Discipline Policies
 CREATE TABLE IF NOT EXISTS `discipline_policies` (

@@ -12,7 +12,8 @@ import { schedules } from "../../../schema/schedules";
 import { generateReportDescription } from "../../../utils/reportDescriptionGenerator";
 import { NotFoundError, BadRequestError, ForbiddenError } from "../../../errors/customErrors";
 import { eq, and, isNull, inArray } from "drizzle-orm";
-import { UserContext, getTeacherIdFromUserId } from "../../../utils/rbac";
+import { type UserContext, getTeacherIdFromUserId } from "../../../utils/rbac";
+import { isAttendanceInSemester } from "./interimReportCardService";
 
 export class ReportCardService {
   /**
@@ -75,10 +76,11 @@ export class ReportCardService {
       throw new BadRequestError("Siswa sudah memiliki rapor untuk semester dan tahun ajaran ini");
     }
 
-    // 4. Hitung absensi siswa secara otomatis
+    // 4. Hitung absensi siswa secara otomatis (filtered by semester)
     const studentAttendanceDetails = await db
       .select({
         status: attendanceDetails.status,
+        attendanceDate: attendances.attendanceDate,
       })
       .from(attendanceDetails)
       .innerJoin(attendances, eq(attendanceDetails.attendanceId, attendances.id))
@@ -96,6 +98,8 @@ export class ReportCardService {
     let absentCount = 0;
 
     for (const att of studentAttendanceDetails) {
+      if (!isAttendanceInSemester(att.attendanceDate, semester)) continue;
+
       if (att.status === "SICK") sickCount++;
       else if (att.status === "PERMISSION") permissionCount++;
       else if (att.status === "ABSENT") absentCount++;
@@ -183,8 +187,8 @@ export class ReportCardService {
         class: { 
           id: classes.id, 
           name: classes.name,
-          homeroomTeacher: { id: teachers.id, name: teachers.name }
         },
+        homeroomTeacher: { id: teachers.id, name: teachers.name },
         academicYear: { id: academicYears.id, name: academicYears.year }
       })
       .from(reportCards)
@@ -369,31 +373,6 @@ export class ReportCardService {
 
     const results = [];
     for (const r of rcList) {
-      const details = await this.getReportCardDetails(schoolId, r.id);
-      results.push(details);
-    }
-    return results;
-  }
-  async getClassReportCards(
-    schoolId: number,
-    classId: number,
-    query: { academicYearId: number; semester: "GANJIL" | "GENAP" }
-  ) {
-    const rcList = await db
-      .select({ id: reportCards.id, schoolId: reportCards.schoolId })
-      .from(reportCards)
-      .where(
-        and(
-          eq(reportCards.classId, classId),
-          eq(reportCards.academicYearId, query.academicYearId),
-          eq(reportCards.semester, query.semester),
-          isNull(reportCards.deletedAt)
-        )
-      );
-
-    const results = [];
-    for (const r of rcList) {
-      if (r.schoolId !== schoolId) continue;
       const details = await this.getReportCardDetails(schoolId, r.id);
       results.push(details);
     }
