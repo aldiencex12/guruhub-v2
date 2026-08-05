@@ -114,20 +114,26 @@ export default function MobileDashboard() {
         setStudentDemeritPoints(totalPoints);
         setStudentIncidentsList(myIncidents);
 
-        // Schedules today (Filtered by student's class if known)
-        const enriched = schedsData.map((s) => ({
-          ...s,
-          class: classesData.find((c) => c.id === s.classId),
-          subject: subjectsData.find((sub) => sub.id === s.subjectId),
-          teacher: teachersData.find((t) => t.id === s.teacherId),
-        }));
+        // Schedules today (Filtered strictly by student's class)
+        const enriched = schedsData.map((s: any) => {
+          const sClassId = s.classId || s.class_id;
+          const sSubjectId = s.subjectId || s.subject_id;
+          const sTeacherId = s.teacherId || s.teacher_id;
+          return {
+            ...s,
+            classId: sClassId,
+            class: classesData.find((c: any) => Number(c.id) === Number(sClassId)),
+            subject: subjectsData.find((sub: any) => Number(sub.id) === Number(sSubjectId)),
+            teacher: teachersData.find((t: any) => Number(t.id) === Number(sTeacherId)),
+          };
+        });
 
-        const todaySchedules = enriched.filter((s) => {
-          const isToday = s.dayOfWeek.toLowerCase() === currentDay.toLowerCase();
-          const isMyClass = studentClassId ? Number(s.classId) === Number(studentClassId) : true;
+        const todaySchedules = enriched.filter((s: any) => {
+          const isToday = s.dayOfWeek && s.dayOfWeek.toLowerCase().trim() === currentDay.toLowerCase().trim();
+          const isMyClass = studentClassId ? Number(s.classId) === Number(studentClassId) : false;
           return isToday && isMyClass;
         });
-        setSchedules(todaySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime)));
+        setSchedules(todaySchedules.sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || "")));
 
         // Real Attendance stats
         try {
