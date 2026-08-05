@@ -244,12 +244,11 @@ export default function MobileDashboard() {
     }
   };
 
-  const currentUserId = currentUser?.id;
-  const currentUserEmail = currentUser?.email;
+  const fetchKey = currentUser ? `${currentUser.id}_${currentUser.email}` : "guest";
 
   useEffect(() => {
     fetchData();
-  }, [currentUserId, currentUserEmail]);
+  }, [fetchKey]);
 
   if (loading) {
     return (
